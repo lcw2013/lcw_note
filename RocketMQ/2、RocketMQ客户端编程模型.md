@@ -39,12 +39,12 @@ consumer.registerMessageListener(new MessageListenerOrderly() {
 RocketMQ实现消息顺序消费，是需要生产者和消费者配合才能实现的。
 ![](assets/2、RocketMQ客户端编程模型/file-20260404204034396.png)
 
-1、生产者只有将一批有顺序要求的消息，放到同一个MesasgeQueue上，通过MessageQueue的FIFO特性保证这一批消息的顺序。
-​ 如果不指定MessageSelector对象，那么生产者会采用轮询的方式将多条消息依次发送到不同的MessageQueue上。
-​ 2、消费者需要实现MessageListenerOrderly接口，实际上在服务端，处理MessageListenerOrderly时，会给一个MessageQueue加锁，拿到MessageQueue上所有的消息，然后再去读取下一个MessageQueue的消息。
+1、生产者只有将一批有顺序要求的消息，放到同一个MesasgeQueue上，通过MessageQueue的FIFO特性保证这一批消息的顺序。<br>
+​ 如果不指定MessageSelector对象，那么生产者会采用轮询的方式将多条消息依次发送到不同的MessageQueue上。<br>
+​ 2、消费者需要实现MessageListenerOrderly接口，实际上在服务端，处理MessageListenerOrderly时，会给一个MessageQueue加锁，拿到MessageQueue上所有的消息，然后再去读取下一个MessageQueue的消息。<br>
 
 **注意点：**
-​ 1、理解局部有序与全局有序。大部分业务场景下，我们需要的其实是局部有序。如果要保持全局有序，那就只保留一个MessageQueue。性能显然非常低。
-​ 2、生产者端尽可能将有序消息打散到不同的MessageQueue上，避免过于集中导致数据热点竞争。
-​ 3、消费者端只进行有限次数的重试。如果一条消息处理失败，RocketMQ会将后续消息阻塞住，让消费者进行重试。但是，如果消费者一直处理失败，超过最大重试次数，那么RocketMQ就会跳过这一条消息，处理后面的消息，这会造成消息乱序。
-​ 4、消费者端如果确实处理逻辑中出现问题，不建议抛出异常，可以返回ConsumeOrderlyStatus.SUSPEND_CURRENT_QUEUE_A_MOMENT作为替代。
+​ 1、理解局部有序与全局有序。大部分业务场景下，我们需要的其实是局部有序。如果要保持全局有序，那就只保留一个MessageQueue。性能显然非常低。<br>
+​ 2、生产者端尽可能将有序消息打散到不同的MessageQueue上，避免过于集中导致数据热点竞争。<br>
+​ 3、消费者端只进行有限次数的重试。如果一条消息处理失败，RocketMQ会将后续消息阻塞住，让消费者进行重试。但是，如果消费者一直处理失败，超过最大重试次数，那么RocketMQ就会跳过这一条消息，处理后面的消息，这会造成消息乱序。<br>
+​ 4、消费者端如果确实处理逻辑中出现问题，不建议抛出异常，可以返回ConsumeOrderlyStatus.SUSPEND_CURRENT_QUEUE_A_MOMENT作为替代。<br>
