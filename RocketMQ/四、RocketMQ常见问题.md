@@ -14,3 +14,22 @@
 生产者发送消息之所以可能会丢消息，都是因为网络。因为网络的不稳定性，容易造成请求丢失。怎么解决这样的问题呢？其实一个统一的思路就是生产者确认。简单来说，就是生产者发出消息后，给生产者一个确定的通知，这个消息在Broker端是否写入完成了。就好比打电话，不确定电话通没通，那就互相说个“喂”，具体确认一下。只不过基于这个同样的思路，各个MQ产品有不同的实现方式。
 **1、生产者发送消息确认机制**
 在RocketMQ中，提供了三种不同的发送消息的方式：
+```
+// 异步发送，不需要Broker确认。效率很高，但是会有丢消息的可能。
+producer.sendOneway(msg);
+// 同步发送，生产者等待Broker的确认。消息最安全，但是效率很低。
+SendResult sendResult = producer.send(msg, 20 * 1000);
+// 异步发送，生产者另起一个线程等待Broker确认，收到Broker确认后直接触发回调方法。消息安全和效率之间比较均衡，但是会加大客户端的负担。
+producer.send(msg, new SendCallback() {
+	@Override
+	public void onSuccess(SendResult sendResult) {
+		// do something
+	}
+
+	@Override
+	public void onException(Throwable e) {
+		// do something
+	}
+});
+
+```
