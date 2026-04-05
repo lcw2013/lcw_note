@@ -72,8 +72,16 @@ RocketMQ实现消息顺序消费，是需要生产者和消费者配合才能实
 7. 生产者根据检查到的本地事务的最终状态再次提交二次确认，服务端仍按照步骤4对半事务消息进行处理。
 **示例代码：** 参见 org.apache.rocketmq.example.transaction.TransactionProducer
 
+实现时的重点是使用RocketMQ提供的TransactionMQProducer事务生产者，在TransactionMQProducer中注入一个TransactionListener事务监听器来执行本地事务，以及后续对本地事务的检查。
+**注意点：**
+1. 半消息是对消费者不可见的一种消息。实际上，RocketMQ的做法是将消息转到了一个系统Topic，RMQ_SYS_TRANS_HALF_TOPIC。
+2. 事务消息中，本地事务回查次数通过参数transactionCheckMax设定，默认15次。本地事务回查的间隔通过参数transactionCheckInterval设定，默认60秒。超过回查次数后，消息将会被丢弃。
+3. 其实，了解了事务消息的机制后，在具体执行时，可以对事务流程进行适当的调整。
 
+![](assets/2、RocketMQ客户端编程模型/file-20260405152428325.png)
+4. 如果你还是感觉不到RocketMQ事务消息机制的作用，那么可以看看下面这个面试题：
 
+![](assets/2、RocketMQ客户端编程模型/file-20260405152512102.png)
 
 ## 9、ACL权限控制机制
 
