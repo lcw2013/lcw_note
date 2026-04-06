@@ -221,4 +221,71 @@ public class OrderConsumer {
 
 至于RabbitMQ，以他的Classic Queue经典对列为例，他的消息被一个消费者从队列中拉取后，就直接从队列中把消息删除了。所以，基本不存在资源竞争的问题。那就简单的是一个队列只对应一个Consumer，那就是能保证顺序消费的。如果一个队列对应了多个Consumer，同一批消息，可能会进入不同的Consumer处理，所以也就没法保证消息的消费顺序 
 # 三、MQ如何保证消息幂等性
- 
+ ## 1、生产者发送消息到服务端如何保持幂等
+ Producer发送消息时，如果采用发送者确认的机制，那么Producer发送消息会等待Broker的响应。如果没有收到Broker的响应，Producer就会发起重试。但是，Producer没有收到Broker的响应，也有可能是Broker已经正常处理完了消息，只不过发给Producer的响应请求丢失了。这时候Producer再次发起消息重试，就有可能造成消息重复。
+
+RocketMQ的处理方式，是会在发送消息时，给每条消息分配一个唯一的ID。
+```java
+//org.apache.rocketmq.client.impl.producer.DefaultMQProducerImpl#sendKernelImpl
+			//for MessageBatch,ID has been set in the generating process
+			if (!(msg instanceof MessageBatch)) {
+				MessageClientIDSetter.setUniqID(msg);
+			}
+
+
+public static void setUniqID(final Message msg) {
+	if (msg.getProperty(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX) == null) {
+		msg.putProperty(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, createUniqID());
+	}
+}
+```
+通过这个ID，就可以判断消息是否重复投递。
+
+而对于Kafka，则会通过他的幂等性配置，防止生产者重复投递消息造成的幂等性问题。
+
+在Kafka中，需要打开idempotence幂等性控制后(默认是打开的，但是如果其他配置有冲突，会影响幂等性配置)。Kafka为了保证消息发送的Exactly-once语义，增加了几个概念：
+- PID：每个新的Producer在初始化的过程中就会被分配一个唯一的PID。这个PID对用户是不可见的。
+- Sequence Numer: 对于每个PID，这个Producer针对Partition会维护一个sequenceNumber。这是一个从0开始单调递增的数字。当Producer要往同一个Partition发送消息时，这个Sequence Number就会加1。然后会随着消息一起发往Broker。
+- Broker端则会针对每个<PID,Partition>维护一个序列号（SN），只有当对应的SequenceNumber = SN+1时，Broker才会接收消息，同时将SN更新为SN+1。否则，SequenceNumber过小就认为消息已经写入了，不需要再重复写入。而如果SequenceNumber过大，就会认为中间可能有数据丢失了。对生产者就会抛出一个OutOfOrderSequenceException。
+![](assets/四、RocketMQ常见问题/file-20260406122516532.png)
+## 2、消费者消费消息如何保持幂等
+这里以RocketMQ来讨论如何防止消费者多次重复消费同一条消息。
+
+首先，关于消息会如何往消费者投递。RocketMQ官网明确做了回答：
+![](assets/四、RocketMQ常见问题/file-20260406122550002.png)
+也就是说，在大多数情况下，不需要单独考虑消息重复消费的问题。但是，同样，这个回答里也说明了，存在一些小概率情况，需要单独考虑消费者的消息幂等问题。
+
+至于有哪些小概率情况呢？最典型的情况就是网络出现波动的时候。RocketMQ是通过消费者的响应机制来推进offset的，如果consumer从broker上获取了消息，正常处理之后，他要往broker返回一个响应，但是如果网络出现波动，consumer从broker上拿取到了消息，但是等到他向broker发响应时，发生网络波动，这个响应丢失了，那么就会造成消息的重复消费。因为broker没有收到响应，就会向这个Consumer所在的Group重复投递消息。
+
+然后，消费者如何防止重复消费呢？
+
+防止重复消费，最主要是要找到一个唯一性的指标。在RocketMQ中，Producer发出一条消息后，RocketMQ内部会给每一条消息分配一个唯一的messageId。而这个messageId在Consumer中是可以获取到的。所以大多数情况下，这个messageId就是一个很好的唯一性指标。Consumer只要将处理过的messageId记录下来，就可以判断这条消息之前有没有处理过。
+
+但是同样也有一些特殊情况。如果Producer是采用批量发送，或者是事务消息机制发送，那么这个messageId就没有那么好控制了。所以，如果在真实业务中，更建议根据业务场景来确定唯一指标。例如，在电商下单的场景，订单ID就是一个很好的带有业务属性的唯一指标。在使用RocketMQ时，可以使用message的key属性来传递订单ID。这样Consumer就能够比较好的防止重复消费。
+
+最后，对于幂等性问题，除了要防止重复消费外，还需要防止消费丢失。也就是Consumer一直没有正常消费消息的情况。
+
+在RocketMQ中，重复投递的消息，会单独放到以消费者组为维度构建的重试对列中。如果经过多次重试后还是无法被正常消费，那么最终消息会进入到消费者组对应的死信对列中。也就是说，如果RocketMQ中出现了死信对列，那么就意味着有一批消费者的逻辑是一直有问题的，这些消息始终无法正常消费。这时就需要针对死信对列，单独维护一个消费者，对这些错误的业务消息进行补充处理。这里需要注意一下的是，RocketMQ中的死信对列，默认权限是无法消费的，需要手动调整权限才能正常消费。
+
+# 四、MQ如何快速处理积压的消息
+## 1、消息积压会有哪些问题。
+
+对RocketMQ和Kafka来说，他们的消息积压能力本来就是很强的，因此，短时间的消息积压，是没有太多问题的。但是需要注意，如果消息积压问题一直得不到解决，RocketMQ和Kafka在日志文件过期后，就会直接删除过期的日志文件。而这些日志文件上未消费的消息，就会直接丢失。
+
+而对RabbitMQ来说， Classic Queue经典对列和Quorum Queue仲裁对列，如果有大量消息积压，未被消费，就会严重影响服务端的性能，因此需要重点关注。而至于Stream Queue流式对列，整体的处理机制已经和RocketMQ与Kafka比较相似了，对消息积压的承受能力就会比较强。但是还是需要注意和RocketMQ与Kafka相同的问题。
+## 2、怎么处理大量积压的消息
+
+产生消息积压的根本原因还是Consumer处理消息的效率太低，所以最核心的目标还是要提升Consumer消费消息的效率。如果不能从业务上提升Consumer消费消息的性能，那么最直接的办法就是针对处理消息比较慢的消费者组，增加更多的Consumer实例。但是这里需要注意一下，增加Consumer实例是不是会有上限。
+
+对于RabbitMQ，如果是Classic Queue经典对列，那么针对同一个Queue的多个消费者，是按照Work Queue的模式，在多个Consuemr之间依次分配消息的。所以这时，如果Consumer消费能力不够，那么直接加更多的Consumer实例就可以了。这里需要注意下的是如果各个Consumer实例他们的运行环境，或者是处理消息的速度有差别。那么可以优化一下每个Consumer的比重(Qos属性)，从而尽量大的发挥Consumer实例的性能。
+
+而对于RocketMQ，因为同一个消费者组下的多个Cosumer需要和对应Topic下的MessageQueue建立对应关系，而一个MessageQueue最多只能被一个Consumer消费，因此，增加的Consumer实例最多也只能和Topic下的MessageQueue个数相同。如果此时再继续增加Consumer的实例，那么就会有些Consumer实例是没有MessageQueue去消费的，因此也就没有用了。
+
+![](assets/四、RocketMQ常见问题/file-20260406122642124.png)
+这时，如果Topic下的MessageQueue配置本来就不够多的话，那就无法一直增加Consumer节点个数了。这时怎么处理呢？如果要快速处理积压的消息，可以创建一个新的Topic，配置足够多的MessageQueue。然后把Consumer实例的Topic转向新的Topic，并紧急上线一组新的消费者，只负责消费旧Topic中的消息，并转存到新的Topic中。这个速度明显会比普通Consumer处理业务逻辑要快很多。然后在新的Topic上，就可以通过添加消费者个数来提高消费速度了。之后再根据情况考虑是否要恢复成正常情况。
+
+> 其实这种思路和RocketMQ内部很多特殊机制的处理方式是一样的。例如固定级别的延迟消息机制，也是把消息临时转到一个系统内部的Topic下，处理过后，再转回来。
+
+至于Kafka，也可以采用和RocketMQ相似的处理方式。
+
+
