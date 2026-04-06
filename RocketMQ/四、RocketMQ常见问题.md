@@ -187,8 +187,35 @@ public class OrderProducer {
 
 
 2、Consumer每次集中从一个MessageQueue中拿取消息。
+```java
+public class OrderConsumer {  
+  
+    public static void main(String[] args) throws MQClientException {  
+        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("orderConsumer");  
+  
+        consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);  
+  
+        consumer.subscribe("OrderTopic", "*");  
+        consumer.setNamesrvAddr("192.168.65.112:9876");  
+        consumer.registerMessageListener(new MessageListenerOrderly() {  
+            @Override  
+            public ConsumeOrderlyStatus consumeMessage(List<MessageExt> msgs, ConsumeOrderlyContext context) {  
+                context.setAutoCommit(true);  
+                for(MessageExt msg:msgs){  
+                    System.out.println("收到消息内容 "+new String(msg.getBody()));  
+                }  
+                return ConsumeOrderlyStatus.SUCCESS;  
+            }  
+        });  
+  
+        consumer.start();  
+        System.out.printf("Consumer Started.%n");  
+    }  
+  
+}
+```
 
-在Producer端，RocketMQ和Kafka都提供了分区计算机制，可以让应用程序自己决定消息写入到哪一个分区。所以这一块，是由业务自己决定的。只要通过定制数据分片算法，把一组局部有序的消息发到同一个对列当中，就可以通过对列的FIFO特性，保证消息的处理顺序。对于RabbitMQ，则可以通过维护Exchange与Queue之间的绑定关系，将这一组局部有序的消息转发到同一个对列中，从而保证这一组有序的消息，在RabbitMQ内部保存时，是有序的。
+在Producer端，RocketMQ和Kafka都提供了分区计算机制，可以让应用程序自己决定消息写入到哪一个分区。所以这一块，是由业务自己决定的。只要通过定制数据分片算法，把一组局部有序的消息发到同一个对列当中，就可以通过对列的FIFO特性，保证消息的处理顺序。对于RabbitMQ，则可以通过维护Exchange与Queue之间的绑定关系，将这一组局部有序的消息转发到同一个对列中，从而保证这一组有序的消息，在RabbitMQ内部保 存时，是有序的。
 
 在Conusmer端，RocketMQ是通过让Consumer注入不同的消息监听器来进行区分的。而具体的实现机制，在之前章节分析过，核心是通过对Consumer的消费线程进行并发控制，来保证消息的消费顺序的。类比到Kafka呢。Kafka中并没有这样的并发控制。而实际上，Kafka的Consumer对某一个Partition拉取消息时，天生就是单线程的，所以，参照RocketMQ的顺序消费模型，Kafka的Consumer天生就是能保证局部顺序消费的。
 
