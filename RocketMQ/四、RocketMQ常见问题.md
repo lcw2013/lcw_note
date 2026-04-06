@@ -149,6 +149,42 @@ consumer.registerMessageListener(new MessageListenerConcurrently{
 这个机制需要两个方面的保障。
 
 1、Producer将一组有序的消息写入到同一个MessageQueue中。
+```java
+public class OrderProducer {  
+  
+    public static void main(String[] args) throws MQClientException{  
+        try {  
+            DefaultMQProducer producer = new DefaultMQProducer("please_rename_unique_group_name");  
+            producer.setNamesrvAddr("192.168.65.112:9876");  
+            producer.start();  
+  
+            for (int i = 0; i < 20; i++) {  
+                int orderId = i;  
+                for(int j = 0 ; j < 5; j++){  
+                    Message msg =  
+                            new Message("OrderTopic", "order_"+orderId, "KEY" + orderId,  
+                                    ("order_" + orderId + " step " + j).getBytes(RemotingHelper.DEFAULT_CHARSET));  
+                    SendResult sendResult = producer.send(msg, new MessageQueueSelector() {  
+                        @Override  
+                        public MessageQueue select(List<MessageQueue> mqs, Message msg, Object arg) {  
+                            Integer id = (Integer) arg;  
+                            int index = id % mqs.size();  
+                            return mqs.get(index);  
+                        }  
+                    }, orderId);  
+                    System.out.printf("%s%n", sendResult);  
+                }  
+            }  
+  
+            producer.shutdown();  
+        } catch (Exception e) {  
+            e.printStackTrace();  
+            throw new MQClientException(e.getMessage(), null);  
+        }  
+    }  
+}
+```
+
 
 2、Consumer每次集中从一个MessageQueue中拿取消息。
 
