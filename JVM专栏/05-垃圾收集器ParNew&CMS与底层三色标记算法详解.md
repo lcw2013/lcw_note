@@ -47,6 +47,44 @@ Parallel Scavenge收集器关注点是吞吐量（高效率的利用CPU）。CMS
 ![](assets/05-垃圾收集器ParNew&CMS与底层三色标记算法详解/file-20260411210719097.png)
 Parallel Old收集器是Parallel Scavenge收集器的老年代版本。使用多线程和“标记-整理”算法。在注重吞吐量以及CPU资源的场合，都可以优先考虑 Parallel Scavenge收集器和Parallel Old收集器(JDK8默认的新生代和老年代收集器)。
 
+## 1.3 ParNew收集器(-XX:+UseParNewGC)
+ParNew收集器其实跟Parallel收集器很类似，区别主要在于它可以和CMS收集器配合使用。
+**新生代采用复制算法**
+![](assets/05-垃圾收集器ParNew&CMS与底层三色标记算法详解/file-20260412174711433.png)
+它是许多运行在Server模式下的虚拟机的首要选择，除了Serial收集器外，只有它能与CMS收集器（真正意义上的并发收集器，后面会介绍到）配合工作。
+
+## 1.4 CMS收集器(-XX:+UseConcMarkSweepGC(old))
+**CMS（Concurrent Mark Sweep）收集器是一种以获取最短回收停顿时间为目标的收集器。它非常符合在注重用户体验的应用上使用，它是HotSpot虚拟机第一款真正意义上的并发收集器，它第一次实现了让垃圾收集线程与用户线程（基本上）同时工作。**
+从名字中的Mark Sweep这两个词可以看出，CMS收集器是一种 “标记-清除”算法实现的，它的运作过程相比于前面几种垃圾收集器来说更加复杂一些。整个过程分为四个步骤：
+- **初始标记**： 暂停所有的其他线程(STW)，**并记录下gc roots直接能引用的对象，速度很快。**
+-  **并发标记**： 并发标记阶段就是从GC Roots的直接关联对象开始遍历整个对象图的过程， 这个过程耗时较长但是不需要停顿用户线程， 可以与垃圾收集线程一起并发运行。因为用户程序继续运行，可能会有导致已经标记过的对象状态发生改变。
+-  **重新标记**： 重新标记阶段就是为了修正并发标记期间因为用户程序继续运行而导致标记产生变动的那一部分对象的标记记录(主要是处理漏标问题)，这个阶段的停顿时间一般会比初始标记阶段的时间稍长，远远比并发标记阶段时间短。**主要用到三色标记里的增量更新算法(见下面详解)做重新标记**。
+- **并发清理**： 开启用户线程，同时GC线程开始对未标记的区域做清扫。这个阶段如果有新增对象会被标记为黑色不做任何处理(见下面三色标记算法详解)。
+- **并发重置**：重置本次GC过程中的标记数据。
+
+![](assets/05-垃圾收集器ParNew&CMS与底层三色标记算法详解/file-20260412175011169.png)
+
+从它的名字就可以看出它是一款优秀的垃圾收集器，主要优点：并发收集、低停顿。但是它有下面几个明显的缺点：
+- 对CPU资源敏感（会和服务抢资源）；
+- 无法处理浮动垃圾(在并发标记和并发清理阶段又产生垃圾，这种浮动垃圾只能等到下一次gc再清理了)；
+- 它使用的回收算法-“标记-清除”算法会导致收集结束时会有大量空间碎片产生，当然通过参数-XX:+UseCMSCompactAtFullCollection可以让jvm在执行完标记清除后再做整理
+- 执行过程中的不确定性，会存在上一次垃圾回收还没执行完，然后垃圾回收又被触发的情况，特别是在并发标记和并发清理阶段会出现，一边回收，系统一边运行，也许没回收完就再次触发full gc，也就是"concurrent mode failure"，此时会进入stop the world，用serial old垃圾收集器来回收
+**CMS的相关核心参数**
+
+1. -XX:+UseConcMarkSweepGC：启用cms 
+2. -XX:ConcGCThreads：并发的GC线程数
+3. -XX:+UseCMSCompactAtFullCollection：FullGC之后做压缩整理（减少碎片）
+4. -XX:CMSFullGCsBeforeCompaction：多少次FullGC之后压缩一次，默认是0，代表每次FullGC后都会压缩一次
+5. -XX:CMSInitiatingOccupancyFraction: 当老年代使用达到该比例时会触发FullGC（默认是92，这是百分比）
+6. -XX:+UseCMSInitiatingOccupancyOnly：只使用设定的回收阈值(-XX:CMSInitiatingOccupancyFraction设定的值)，如果不指定，JVM仅在第一次使用设定值，后续则会自动调整
+
+-XX:+CMSScavengeBeforeRemark：用于在CMS垃圾收集器的重新标记阶段（Remark）之前，强制触发一次年轻代的垃圾回收。其目的是减少需要扫描的对象数量，从而缩短重新标记阶段的停顿时间。
+
+7. -XX:+CMSParallellnitialMarkEnabled：表示在初始标记的时候多线程执行，缩短STW
+8. -XX:+CMSParallelRemarkEnabled：在重新标记的时候多线程执行，缩短STW;
+
+
+
 
 
 
