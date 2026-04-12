@@ -202,4 +202,19 @@ void oop_field_store(oop* field, oop new_value) {
 }
 ```
 ### 写屏障实现SATB
+当对象B的成员变量的引用发生变化时，比如引用消失（a.b.d = null），我们可以利用写屏障，将B原来成员变量的引用对象D记录下来：
+```java
+void pre_write_barrier(oop* field) {
+    oop old_value = *field;    // 获取旧值
+    remark_set.add(old_value); // 记录原来的引用对象
+}
+```
+### 写屏障实现增量更新
+当对象A的成员变量的引用发生变化时，比如新增引用（a.d = d），我们可以利用写屏障，将A新的成员变量引用对象D记录下来：
+```java
+void post_write_barrier(oop* field, oop new_value) {  
+    remark_set.add(new_value);  // 记录新引用的对象
+}
+```
 
+## 读屏障
