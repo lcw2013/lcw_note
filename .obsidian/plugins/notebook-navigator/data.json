@@ -107,7 +107,7 @@
     "source": "none",
     "file": null
   },
-  "dualPane": true,
+  "dualPane": false,
   "dualPaneOrientation": "horizontal",
   "showTooltips": false,
   "showTooltipPath": true,
