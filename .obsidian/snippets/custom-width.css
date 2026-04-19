@@ -1,0 +1,11 @@
+/* 强制代码块不换行，允许横向滚动 */
+.markdown-source-view.is-readable-line-width .CodeMirror,
+.markdown-preview-view.is-readable-line-width .markdown-preview-sizer {
+    max-width: 100% !important;
+}
+
+/* 针对代码块内部的样式调整 */
+code {
+    white-space: pre; /* 保持代码格式，不换行 */
+    overflow-x: auto; /* 超出宽度显示滚动条 */
+}
