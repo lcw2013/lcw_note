@@ -1,0 +1,44 @@
+{
+  "每日一问.md": {
+    "scroll": 759.9375,
+    "cursor": {
+      "from": {
+        "line": 797,
+        "ch": 0
+      },
+      "to": {
+        "line": 797,
+        "ch": 0
+      }
+    },
+    "expandedKeys": []
+  },
+  "分布式事解决方案.md": {
+    "scroll": 21.21497120921305,
+    "cursor": {
+      "from": {
+        "line": 0,
+        "ch": 0
+      },
+      "to": {
+        "line": 0,
+        "ch": 0
+      }
+    },
+    "expandedKeys": []
+  },
+  "并发编程专栏/2. Future&CompletableFuture实战.md": {
+    "scroll": 0,
+    "cursor": {
+      "from": {
+        "line": 0,
+        "ch": 0
+      },
+      "to": {
+        "line": 0,
+        "ch": 0
+      }
+    },
+    "expandedKeys": []
+  }
+}
