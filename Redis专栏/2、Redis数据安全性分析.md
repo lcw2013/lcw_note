@@ -170,7 +170,7 @@ appendfilename "appendonly.aof"
 
 ![](assets/2、Redis数据安全性分析/file-20260531100134034.png)
 
-&#x9;从这几个文件中能够看到， 现在的AOF已经具备了RDB+AOF的功能。并且，拆分增量文件的方式，也能够进一步控制aof文件的大小。
+从这几个文件中能够看到， 现在的AOF已经具备了RDB+AOF的功能。并且，拆分增量文件的方式，也能够进一步控制aof文件的大小。
 
 3> appendfsync 同步方式。默认everysecond 每秒记录一次。no 不记录(交由操作系统进行内存刷盘)。 always 记录每次操作，数据更安全，但性能较低。
 
@@ -184,9 +184,9 @@ appendfilename "appendonly.aof"
 
 6> no-appendfsync-on-rewrite aof重写期间是否同步
 
-&#x9;**3、AOF文件内容解析**
+**3、AOF文件内容解析**
 
-&#x9;示例：打开aof配置，aof日志文件appendonly.aof。然后使用redis-cli连接redis服务，简单执行两个set操作。
+示例：打开aof配置，aof日志文件appendonly.aof。然后使用redis-cli连接redis服务，简单执行两个set操作。
 
 ```shell
 [root@192-168-65-214 myredis]# redis-cli -a 123qweasd
@@ -199,14 +199,14 @@ OK
 OK
 ```
 
-&#x9;然后，就可以打开appendonly.aof.1.incr.aof增量文件。里面其实就是按照Redis的协议记录了每一次操作。
+然后，就可以打开appendonly.aof.1.incr.aof增量文件。里面其实就是按照Redis的协议记录了每一次操作。
 
 ![](assets/2、Redis数据安全性分析/file-20260531100152047.png)
 
 
-&#x9;这就是redis的指令协议。redis就是通过TCP协议，一次次解析各个指令。比如一个set k1 v1 这样的指令，\*3表示由三个部分组成， 第一个部分 \$3 set 表示三个字符长度的set组成第一个部分。
+这就是redis的指令协议。redis就是通过TCP协议，一次次解析各个指令。比如一个set k1 v1 这样的指令，\*3表示由三个部分组成， 第一个部分 \$3 set 表示三个字符长度的set组成第一个部分。
 
-&#x9;了解这个协议后，你甚至可以很轻松的自己写一个Redis的客户端。例如：
+了解这个协议后，你甚至可以很轻松的自己写一个Redis的客户端。例如：
 
 ```java
 package com.roy.redis;
@@ -290,7 +290,7 @@ public class MyRedisClient {
 
 **4、AOF日志恢复**
 
-&#x9;如果Redis服务出现一些意外情况，就会造成AOF日志中指令记录不完整。例如，手动编辑appendonly.aof.1.incr.aof日志文件，在最后随便输入一段文字，就可以模拟指令记录不完整的情况。这时，将Redis服务重启，就会发现重启失败。日志文件中会有如下错误日志：
+如果Redis服务出现一些意外情况，就会造成AOF日志中指令记录不完整。例如，手动编辑appendonly.aof.1.incr.aof日志文件，在最后随便输入一段文字，就可以模拟指令记录不完整的情况。这时，将Redis服务重启，就会发现重启失败。日志文件中会有如下错误日志：
 
 ```log
 21773:M 11 Jun 2024 18:22:43.928 * DB loaded from base file appendonly.aof.1.base.rdb: 0.019 seconds
@@ -299,7 +299,7 @@ public class MyRedisClient {
 
 > 需要配置日志文件，例如： logfile "/root/myredis/logs/6379.log"
 
-&#x9;这时就需要先将日志文件修复，然后才能启动。
+这时就需要先将日志文件修复，然后才能启动。
 
 ```shell
 [root@192-168-65-214 appendonlydir]# redis-check-aof --fix appendonly.aof.1.incr.aof 
@@ -317,7 +317,7 @@ Successfully truncated AOF appendonly.aof.1.incr.aof
 
 ## 4、混合持久化策略
 
-&#x9;RDB和AOF两种持久化策略各有优劣，所以在使用Redis时，是支持同时开启两种持久化策略的。在redis.conf配置文件中，有一个参数可以同时打开RDB和AOF两种持久化策略。
+RDB和AOF两种持久化策略各有优劣，所以在使用Redis时，是支持同时开启两种持久化策略的。在redis.conf配置文件中，有一个参数可以同时打开RDB和AOF两种持久化策略。
 
 ```conf
 # Redis can create append-only base files in either RDB or AOF formats. Using
@@ -326,11 +326,11 @@ Successfully truncated AOF appendonly.aof.1.incr.aof
 aof-use-rdb-preamble yes
 ```
 
-&#x9;这也说明，如果同时开启RDB和AOF两种持久化策略，那么Redis在恢复数据时，其实还是会优先选择从AOF的持久化文件开始恢复。因为通常情况下，AOF的数据集比RDB更完整。而且AOF的持久化策略现在已经明确包含了RDB和AOF两种格式，所以AOF恢复数据的效率也还是比较高的。
+这也说明，如果同时开启RDB和AOF两种持久化策略，那么Redis在恢复数据时，其实还是会优先选择从AOF的持久化文件开始恢复。因为通常情况下，AOF的数据集比RDB更完整。而且AOF的持久化策略现在已经明确包含了RDB和AOF两种格式，所以AOF恢复数据的效率也还是比较高的。
 
-&#x9;但是要注意，既然服务重启时只找AOF文件，那是不是就不需要做RDB备份了呢？通常建议还是增加RDB备份。因为AOF数据通常在不断变化，这样其实不太利于定期做数据备份。所以通常建议保留RDB文件并定期进行备份，作为保证数据安全的后手。
+但是要注意，既然服务重启时只找AOF文件，那是不是就不需要做RDB备份了呢？通常建议还是增加RDB备份。因为AOF数据通常在不断变化，这样其实不太利于定期做数据备份。所以通常建议保留RDB文件并定期进行备份，作为保证数据安全的后手。
 
-&#x9;最后要注意，Redis的持久化策略只能保证单机的数据安全。如果服务器的磁盘坏了，那么再好的持久化策略也无法保证数据安全。如果希望进一步保证数据安全，那就需要增加以下几种集群化的方案了。
+最后要注意，Redis的持久化策略只能保证单机的数据安全。如果服务器的磁盘坏了，那么再好的持久化策略也无法保证数据安全。如果希望进一步保证数据安全，那就需要增加以下几种集群化的方案了。
 
 # 三、Redis主从复制Replica机制详解
 
@@ -338,7 +338,7 @@ aof-use-rdb-preamble yes
 
 ## **1、Replica是什么？有什么用？**
 
-&#x9;官网介绍：<https://redis.io/docs/latest/operate/oss_and_stack/management/replication/>
+官网介绍：<https://redis.io/docs/latest/operate/oss_and_stack/management/replication/>
 
 &#x9;redis.conf中的描述
 
