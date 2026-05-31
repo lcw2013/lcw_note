@@ -8,7 +8,7 @@
 
 # 一、Redis性能压测脚本介绍
 
-&#x9;Redis的所有数据是保存在内存当中的，得益于内存高效的读写性能，Redis的性能是非常强悍的。但是，内存的缺点是断电即丢失，所以，在实际项目中，Redis一旦需要保存一些重要的数据，就不可能完全使用内存保存数据。因此，在真实项目中要使用Redis，一定需要针对应用场景，对Redis的性能进行估算，从而在数据安全性与读写性能之间找到一个平衡点。
+Redis的所有数据是保存在内存当中的，得益于内存高效的读写性能，Redis的性能是非常强悍的。但是，内存的缺点是断电即丢失，所以，在实际项目中，Redis一旦需要保存一些重要的数据，就不可能完全使用内存保存数据。因此，在真实项目中要使用Redis，一定需要针对应用场景，对Redis的性能进行估算，从而在数据安全性与读写性能之间找到一个平衡点。
 
 **Redis提供了压测脚本redis-benchmark，可以对Redis进行快速的基准测试。**
 
@@ -166,7 +166,7 @@ LASTSAVE指令查看最后一次成功执行快照的时间。时间是一个代
 appendfilename "appendonly.aof"
 ```
 
-&#x9;Redis7中，对文件名称做了调整。原本只是一个文件，现在换成了三个文件。base.rdb文件即二进制的数据文件。incr.aof是增量的操作日志。manifest则是记录文件信息的元文件。其实在Redis7之前的版本中，aof文件也会包含二进制的RDB部分和文本的AOF部分。在Redis7中，将这两部分分成了单独的文件，这样，即可以分别用来恢复文件，也便于控制AOF文件的大小。
+Redis7中，对文件名称做了调整。原本只是一个文件，现在换成了三个文件。base.rdb文件即二进制的数据文件。incr.aof是增量的操作日志。manifest则是记录文件信息的元文件。其实在Redis7之前的版本中，aof文件也会包含二进制的RDB部分和文本的AOF部分。在Redis7中，将这两部分分成了单独的文件，这样，即可以分别用来恢复文件，也便于控制AOF文件的大小。
 
 ![](assets/2、Redis数据安全性分析/file-20260531100134034.png)
 
@@ -334,13 +334,13 @@ aof-use-rdb-preamble yes
 
 # 三、Redis主从复制Replica机制详解
 
-&#x9;接下来的三种Redis分布式优化方案，主从复制、哨兵集群、Redis集群，都是在分布式场景下保护Redis数据安全以及流量分摊的方案。他们是层层递进的。
+接下来的三种Redis分布式优化方案，主从复制、哨兵集群、Redis集群，都是在分布式场景下保护Redis数据安全以及流量分摊的方案。他们是层层递进的。
 
 ## **1、Replica是什么？有什么用？**
 
 官网介绍：<https://redis.io/docs/latest/operate/oss_and_stack/management/replication/>
 
-&#x9;redis.conf中的描述
+redis.conf中的描述
 
 ```conf
 # Master-Replica replication. Use replicaof to make a Redis instance a copy of
@@ -365,23 +365,23 @@ aof-use-rdb-preamble yes
 
 简单总结：主从复制。当Master数据有变化时，自动将新的数据异步同步到其他slave中。
 
-&#x9;最典型的作用：
+最典型的作用：
 
 *   读写分离：mater以写为主，Slave以读为主
 *   数据备份+容灾恢复
 
 ## **2、如何配置Replica？**
 
-&#x9;配置方式在基础课程部分有详细讲解，这里不做过多重复。简单总结一个原则：**配从不配主**。 这意味着对于一个Redis服务，可以在几乎没有影响的情况下，给他配置一个或者多个从节点。
+配置方式在基础课程部分有详细讲解，这里不做过多重复。简单总结一个原则：**配从不配主**。 这意味着对于一个Redis服务，可以在几乎没有影响的情况下，给他配置一个或者多个从节点。
 
-&#x9;相关核心操作简化为以下几点：
+相关核心操作简化为以下几点：
 
 *   REPLICAOF host port|NO ONE : 一般配置到redis.conf中。
 *   SLAVEOF host port|NO ONE： 在运行期间修改slave节点的信息。如果该服务已经是某个主库的从库了，那么就会停止和原master的同步关系。
 
 ## **3、如何确定主从状态？从库可以写数据吗？**
 
-&#x9;主从状态可以通过 info replication查看。例如，在一个主从复制的master节点上查看到的主从状态是这样的：
+主从状态可以通过 info replication查看。例如，在一个主从复制的master节点上查看到的主从状态是这样的：
 
 ```shell
 127.0.0.1:6379> info replication
@@ -402,7 +402,7 @@ repl_backlog_histlen:56
 
 > 重点要观察slave的state状态。 另外，可以观察下master\_repl\_offset参数。如果是刚建立Replica，数据同步是需要过程的，这时可以看到offset往后推移的过程。
 
-&#x9;从节点上查看到的主从状态是这样的：
+从节点上查看到的主从状态是这样的：
 
 ```shell
 127.0.0.1:6380> info replication
@@ -432,14 +432,14 @@ repl_backlog_histlen:560
 
 > 重点要观察master\_link\_status
 
-&#x9;默认情况下，从库是只读的，不允许写入数据。因为数据只能从master往slave同步，如果slave修改数据，就会造成数据不一致。
+默认情况下，从库是只读的，不允许写入数据。因为数据只能从master往slave同步，如果slave修改数据，就会造成数据不一致。
 
 ```shell
 127.0.0.1:6380> set k4 v4
 (error) READONLY You can't write against a read only replica.
 ```
 
-&#x9;redis.conf中配置了slave的默认权限
+redis.conf中配置了slave的默认权限
 
 ```conf
 # Since Redis 2.6 by default replicas are read-only.
@@ -453,19 +453,19 @@ repl_backlog_histlen:560
 replica-read-only yes
 ```
 
-&#x9;这里也提到，对于slave从节点，虽然禁止了对数据的写操作，但是并没有禁止CONFIG、DEBUG等管理指令，这些指令如果和主节点不一致，还是容易造成数据不一致。如果为了安全起见，可以使用rename-command方法屏蔽这些危险的指令。
+这里也提到，对于slave从节点，虽然禁止了对数据的写操作，但是并没有禁止CONFIG、DEBUG等管理指令，这些指令如果和主节点不一致，还是容易造成数据不一致。如果为了安全起见，可以使用rename-command方法屏蔽这些危险的指令。
 
-&#x9;例如在redis.conf配置文件中增加配置 rename-command CONFIG ""  。就可以屏蔽掉slave上的CONFIG指令。
+例如在redis.conf配置文件中增加配置 rename-command CONFIG ""  。就可以屏蔽掉slave上的CONFIG指令。
 
 > 很多企业在维护Redis时，都会通过rename 直接禁用keys , flushdb, flushall等这一类危险的指令。
 
 ## 4、如果Slave上已经有数据了，同步时会如何处理？
 
-&#x9;在从节点的日志当中其实能够分析出结果：
+在从节点的日志当中其实能够分析出结果：
 
 ![image.png](https://note.youdao.com/yws/res/1183/WEBRESOURCE8644dcffc88c46da5181bae7fe932e00)
 
-&#x9;也可以在从节点尝试解除主从关系，再重新建立主从关系测试一下。
+也可以在从节点尝试解除主从关系，再重新建立主从关系测试一下。
 
 ![image.png](https://note.youdao.com/yws/res/1185/WEBRESOURCE7020b48d233250dafce42ac849960e8b)
 
@@ -487,7 +487,7 @@ replica-read-only yes
 
 2》master高可用问题： 如果master挂了，slave节点是不会自动切换master的，只能等待人工干预，重启master服务，或者调整主从关系，将一个slave切换成master，同时将其他slave的主节点调整为新的master。
 
-&#x9;后续的哨兵集群，就相当于做这个人工干预的工作。当检测到master挂了之后，自动从slave中选择一个节点，切换成master。
+后续的哨兵集群，就相当于做这个人工干预的工作。当检测到master挂了之后，自动从slave中选择一个节点，切换成master。
 
 3》从数据安全性的角度，主从复制牺牲了服务高可用，但是增加了数据安全。
 
@@ -495,11 +495,11 @@ replica-read-only yes
 
 ## 1、Sentinel是什么？有什么用
 
-&#x9;官网介绍： <https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/>
+官网介绍： <https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/>
 
 ![image.png](https://note.youdao.com/yws/res/1177/WEBRESOURCE39bd8de7abf79b28604636f9b32c10e4)
 
-&#x9;Redis的Sentinel不负责数据读写，主要就是给Redis的Replica主从复制提供高可用功能。主要作用有四个：
+Redis的Sentinel不负责数据读写，主要就是给Redis的Replica主从复制提供高可用功能。主要作用有四个：
 
 *   主从监控：监控主从Redis运行是否正常
 *   消息通知：将故障转移的结果发送给客户端
@@ -508,35 +508,35 @@ replica-read-only yes
 
 ## 2、Sentinel核心配置
 
-&#x9;Sentinel的环境搭建以及基础使用，在基础版中已经有详细过程。这里不再赘述。这里以单机模拟搭建Sentinel以及主从集群。Redis的服务端口为6379(master),6380,6381。Sentinel的服务端口为26379,26380,26381
+Sentinel的环境搭建以及基础使用，在基础版中已经有详细过程。这里不再赘述。这里以单机模拟搭建Sentinel以及主从集群。Redis的服务端口为6379(master),6380,6381。Sentinel的服务端口为26379,26380,26381
 
-&#x9;Sentinel最核心的配置其实就是  sentinel.conf中的sentinel monitor \<master-name> \<ip> \<redis-port> \<quorum>
+Sentinel最核心的配置其实就是  sentinel.conf中的sentinel monitor \<master-name> \<ip> \<redis-port> \<quorum>
 
 ![image.png](https://note.youdao.com/yws/res/1176/WEBRESOURCE9c45ee01ee818008e28dcc6ddaa1469d)
 
-&#x9;这个配置中，最抽象的参数就最后的那个quorum。这个参数是什么意思呢？这就需要了解一下Sentinel的工作原理。
+这个配置中，最抽象的参数就最后的那个quorum。这个参数是什么意思呢？这就需要了解一下Sentinel的工作原理。
 
 ## 3、解析Sentinel工作原理
 
-&#x9;Sentinel的核心工作原理分两个步骤，一是如何发现master服务宕机了。二是发现master服务宕机后，如何切换新的master。
+Sentinel的核心工作原理分两个步骤，一是如何发现master服务宕机了。二是发现master服务宕机后，如何切换新的master。
 
 **1》如何发现master服务宕机**
 
-&#x9;这里有两个概念需要了解，S\_DOWN（主观下线）和 O\_DOWN（客观下线）
+这里有两个概念需要了解，S\_DOWN（主观下线）和 O\_DOWN（客观下线）
 
-&#x9;对于每一Sentinel服务，他会不断地往master发送心跳，监听master的状态。如果经过一段时间（参数sentinel down-after-milliseconds \<master-name> \<milliseconds> 指定。默认30秒）没有收到master的响应，他就会主观的认为这个master服务下线了。也就是S\_DOWN。
+对于每一Sentinel服务，他会不断地往master发送心跳，监听master的状态。如果经过一段时间（参数sentinel down-after-milliseconds \<master-name> \<milliseconds> 指定。默认30秒）没有收到master的响应，他就会主观的认为这个master服务下线了。也就是S\_DOWN。
 
-&#x9;但是主观下线并不一定是master服务的问题，如果网络出现抖动或者阻塞，也会造成master的响应超时。为了防止网络抖动造成的误判，Redis的Sentinel就会互相进行沟通，当超过quorum个Sentinel节点都认为master已经出现S\_DOWN后，就会将master标记为O\_DOWN。此时才会真正确定master的服务是宕机的，然后就可以开始故障切换了。
+但是主观下线并不一定是master服务的问题，如果网络出现抖动或者阻塞，也会造成master的响应超时。为了防止网络抖动造成的误判，Redis的Sentinel就会互相进行沟通，当超过quorum个Sentinel节点都认为master已经出现S\_DOWN后，就会将master标记为O\_DOWN。此时才会真正确定master的服务是宕机的，然后就可以开始故障切换了。
 
-&#x9;在配置Sentinel集群时，通常都会搭建奇数个节点，而将quorum配置为集群中的过半个数。这样可以最大化的保证Sentinel集群的可用性。
+在配置Sentinel集群时，通常都会搭建奇数个节点，而将quorum配置为集群中的过半个数。这样可以最大化的保证Sentinel集群的可用性。
 
 **2》发现master服务宕机后，如何切换新的master**
 
-&#x9;当确定master宕机后，Sentinel会主动将一个新的slave切换为mater。这个过程是怎么做的呢？通过以下一个Sentinel服务的日志，可以看到整个过程：
+当确定master宕机后，Sentinel会主动将一个新的slave切换为mater。这个过程是怎么做的呢？通过以下一个Sentinel服务的日志，可以看到整个过程：
 
 ![image.png](https://note.youdao.com/yws/res/1179/WEBRESOURCEb9b5ad934ab828827d9519d495d2a09c)
 
-&#x9;从这个日志中，可以看到Sentinel在做故障切换时，是经过了以下几个步骤的：
+从这个日志中，可以看到Sentinel在做故障切换时，是经过了以下几个步骤的：
 
 <1> master变成O\_DOWN后，Sentinel会在集群中选举产生一个服务节点作为Leader。Leader将负责向其他Redis节点发送命令，协调整个故障切换过程。在选举过程中，Sentinel是采用的Raft算法，这是一种多数派统一的机制，其基础思想是对集群中的重大决议，只要集群中超过半数的节点投票同意，那么这个决议就会成为整个集群的最终决议。这也是为什么建议Sentinel的quorum设置为集群超半数的原因。
 
@@ -550,35 +550,35 @@ replica-read-only yes
 
 <4>如果旧的master恢复了，Sentinel Leader会让旧的master降级为slave，并从新的master上同步数据，恢复工作。
 
-&#x9;最终，各个Redis的配置信息，会输出到Redis服务对应的redis.conf文件中，完成配置覆盖。
+最终，各个Redis的配置信息，会输出到Redis服务对应的redis.conf文件中，完成配置覆盖。
 
 ## 4、Sentinel的缺点
 
-&#x9;Sentinel+Replica的集群服务，可以实现自动故障恢复，所以可用性以及性能都还是比较好的。但是这种方案也有一些问题。
+Sentinel+Replica的集群服务，可以实现自动故障恢复，所以可用性以及性能都还是比较好的。但是这种方案也有一些问题。
 
 1》 对客户端不太友好
 
-&#x9;由于master需要切换，这也就要求客户端也要将写请求频繁切换到master上。
+由于master需要切换，这也就要求客户端也要将写请求频繁切换到master上。
 
 2》数据不安全&#x20;
 
-&#x9;在主从复制集群中，不管~~master~~是谁，所有的数据都以master为主。当master宕机后，那些在master上已经完成了，但是还没有同步给其他slave的操作，就会彻底丢失。因为只要master一完成了切换，所有数据就以新的master为准了。
+在主从复制集群中，不管~~master~~是谁，所有的数据都以master为主。当master宕机后，那些在master上已经完成了，但是还没有同步给其他slave的操作，就会彻底丢失。因为只要master一完成了切换，所有数据就以新的master为准了。
 
-&#x9;因此，在企业实际运用中，用得更多的是下面的Redis集群服务。
+因此，在企业实际运用中，用得更多的是下面的Redis集群服务。
 
 # 五、Redis集群Cluster机制详解
 
 ## 1、Cluster是什么？有什么用？
 
-&#x9;官网地址：<https://redis.io/docs/latest/operate/oss_and_stack/management/scaling/>
+官网地址：<https://redis.io/docs/latest/operate/oss_and_stack/management/scaling/>
 
-&#x9;一句话总结：将多组Redis Replica主从集群整合到一起，像一个Redis服务一样对外提供服务。
+一句话总结：将多组Redis Replica主从集群整合到一起，像一个Redis服务一样对外提供服务。
 
-&#x9;![image.png](https://note.youdao.com/yws/res/1180/WEBRESOURCE7c02d204eef02d9b3a20c46a2e0cf5d3)
+![image.png](https://note.youdao.com/yws/res/1180/WEBRESOURCE7c02d204eef02d9b3a20c46a2e0cf5d3)
 
-&#x9;所以Redis Cluster的核心依然是Replica复制集。
+所以Redis Cluster的核心依然是Replica复制集。
 
-&#x9;**Redis Cluster通过对复制集进行合理整合后，核心是要解决三个问题：**
+**Redis Cluster通过对复制集进行合理整合后，核心是要解决三个问题：**
 
 **1》 客户端需要频繁切换master的问题。**
 
@@ -588,9 +588,9 @@ replica-read-only yes
 
 ## 2、Cluster的核心配置
 
-&#x9;Cluster的基础搭建工作在基础版中已经给大家逐一演示，这里同样不再赘述。接下来还是以单机快速模拟三主三从的Redis集群服务，带大家深入理解集群的原理。
+Cluster的基础搭建工作在基础版中已经给大家逐一演示，这里同样不再赘述。接下来还是以单机快速模拟三主三从的Redis集群服务，带大家深入理解集群的原理。
 
-&#x9;构建Redis集群的核心配置是要在redis.conf中开启集群模式。并且指定一个给集群进行修改的配置文件。
+构建Redis集群的核心配置是要在redis.conf中开启集群模式。并且指定一个给集群进行修改的配置文件。
 
 ```conf
 # Normal Redis instances can't be part of a Redis Cluster; only nodes that are
@@ -608,7 +608,7 @@ cluster-enabled yes
 cluster-config-file nodes-6379.conf
 ```
 
-&#x9;以下是其中一个服务的配置文件示例：
+以下是其中一个服务的配置文件示例：
 
     # 允许所有的IP地址
     bind * -::*
@@ -643,17 +643,17 @@ cluster-config-file nodes-6379.conf
     # RBD文件名
     dbfilename "dump6381.rdb"
 
-&#x9;接下来依次创建6381,6382,6383,6384,6385,6386六个端口的Redis配置文件，并启动服务。
+接下来依次创建6381,6382,6383,6384,6385,6386六个端口的Redis配置文件，并启动服务。
 
-&#x9;接下来就可以构建Redis集群。将多个独立的Redis服务整合成一个统一的集群。
+接下来就可以构建Redis集群。将多个独立的Redis服务整合成一个统一的集群。
 
 ```shell
 [root@192-168-65-214 cluster]# redis-cli -a 123qweasd --cluster create --cluster-replicas 1 192.168.65.214:6381 192.168.65.214:6382 192.168.65.214:6383 192.168.65.214:6384 192.168.65.214:6385 192.168.65.214:6386
 ```
 
-&#x9;其中 --cluster create表示创建集群。 --cluster-replicas 表示为每个master创建一个slave节点。接下来，Redis会自动分配主从关系，形成Redis集群。
+其中 --cluster create表示创建集群。 --cluster-replicas 表示为每个master创建一个slave节点。接下来，Redis会自动分配主从关系，形成Redis集群。
 
-&#x9;集群启动完成后，可以使用客户端连接上其中任意一个服务端，验证集群。
+集群启动完成后，可以使用客户端连接上其中任意一个服务端，验证集群。
 
 ```shell
 --连接Redis集群。-c表示集群模式
@@ -666,7 +666,7 @@ cluster info
 
 > Redis在分配主从关系时，会优先将主节点和从节点分配在不同的机器上。我们这里用一台服务器模拟集群，就无法体现出这种特性。
 
-&#x9;接下来再来逐步验证之前提到的Redis集群要解决的三个问题。
+接下来再来逐步验证之前提到的Redis集群要解决的三个问题。
 
 ```shell
 -- 客户端连接集群
@@ -728,17 +728,17 @@ fd3cbd892f11e950104955f7297adb20fab0253c 192.168.65.214:6381@16381 myself,master
 
 > 注：集群故障转移也可以通过手动形式触发。例如在一个slave节点上执行cluster failover，就会触发一次故障转移，尝试将这个slave提升为master。
 
-&#x9;从节点信息可以看到，集群中在每个master的最后，都记录了他负责的slot槽位，这些slot就是Redis集群工作的核心。
+从节点信息可以看到，集群中在每个master的最后，都记录了他负责的slot槽位，这些slot就是Redis集群工作的核心。
 
 ## 3、详解Slot槽位
 
-&#x9;Redis集群设置16384个哈希槽。每个key会通过CRC16校验后，对16384取模，来决定放到哪个槽。集群的每个节点负责一部分的hash槽。
+Redis集群设置16384个哈希槽。每个key会通过CRC16校验后，对16384取模，来决定放到哪个槽。集群的每个节点负责一部分的hash槽。
 
 ![image.png](https://note.youdao.com/yws/res/1178/WEBRESOURCEd0890ca70a34a7c99c6e7e22bef307cf)
 
 **问题1、Slot如何分配**
 
-&#x9;Redis集群中内置16384个槽位。在建立集群时，Redis会根据集群节点数量，将这些槽位尽量平均的分配到各个节点上。并且，如果集群中的节点数量发生了变化。(增加了节点或者减少了节点)。就需要触发一次reshard，重新分配槽位。而槽位中对应的key，也会随着进行数据迁移。
+Redis集群中内置16384个槽位。在建立集群时，Redis会根据集群节点数量，将这些槽位尽量平均的分配到各个节点上。并且，如果集群中的节点数量发生了变化。(增加了节点或者减少了节点)。就需要触发一次reshard，重新分配槽位。而槽位中对应的key，也会随着进行数据迁移。
 
 ```shell
 # 增加6387,6388两个Redis服务，并启动
@@ -753,15 +753,15 @@ redis-cli -a 123qweasd -p 6381 reshard 192.168.65.214:6381
 redis-cli -a 123qweasd -p 6381 --cluster check 192.168.65.214:6381
 ```
 
-&#x9;reshard操作会从三个旧节点当中分配一部分新的槽位给新的节点。在这个过程中，Redis也就并不需要移动所有的数据，只需要移动那一部分槽位对应的数据。
+reshard操作会从三个旧节点当中分配一部分新的槽位给新的节点。在这个过程中，Redis也就并不需要移动所有的数据，只需要移动那一部分槽位对应的数据。
 
-&#x9;除了这种自动调整槽位的机制，Redis也提供了手动调整槽位的指令。可以使用cluster help查看相关调整指令。
+除了这种自动调整槽位的机制，Redis也提供了手动调整槽位的指令。可以使用cluster help查看相关调整指令。
 
 > 这些指令通常用得比较少，大家自行了解。
 
-&#x9;另外，Redis集群也会检查每个槽位是否有对应的节点负责。如果负责一部分槽位的一组复制节点都挂了，默认情况下Redis集群就会停止服务。其他正常的节点也无法接收写数据的请求。
+另外，Redis集群也会检查每个槽位是否有对应的节点负责。如果负责一部分槽位的一组复制节点都挂了，默认情况下Redis集群就会停止服务。其他正常的节点也无法接收写数据的请求。
 
-&#x9;如果此时，需要强制让Redis集群提供服务，可以在配置文件中，将cluster-require-full-coverage参数手动调整为no。
+如果此时，需要强制让Redis集群提供服务，可以在配置文件中，将cluster-require-full-coverage参数手动调整为no。
 
     # By default Redis Cluster nodes stop accepting queries if they detect there
     # is at least a hash slot uncovered (no available node is serving it).
@@ -780,9 +780,9 @@ redis-cli -a 123qweasd -p 6381 --cluster check 192.168.65.214:6381
 
 **问题2、如何确定key与slot的对应关系？**
 
-&#x9;Redis集群中，对于每一个要写入的key，都会寻找所属的槽位。计算的方式是 CRC16(key) mod 16384。
+Redis集群中，对于每一个要写入的key，都会寻找所属的槽位。计算的方式是 CRC16(key) mod 16384。
 
-&#x9;首先，这意味着在集群当中，那些批量操作的复合指令(如mset,mhset)支持会不太好。如果他们分属不同的槽位，就无法保证他们能够在一个服务上进行原子性操作。
+首先，这意味着在集群当中，那些批量操作的复合指令(如mset,mhset)支持会不太好。如果他们分属不同的槽位，就无法保证他们能够在一个服务上进行原子性操作。
 
 ```shell
 127.0.0.1:6381> mset k1 v1 k2 v2 k3 v3
@@ -791,14 +791,14 @@ redis-cli -a 123qweasd -p 6381 --cluster check 192.168.65.214:6381
 
 > 这也是对分布式事务的一种思考。如果这种批量指令需要分到不同的Redis节点上操作，那么这个指令的操作原子性问题就称为了一个分布式事务问题。而分布式事务是一件非常复杂的事情，不要简单的认为用上seata这样的框架就很容易解决。在大部分业务场景下，直接拒绝分布式事务，是一种很好的策略。
 
-&#x9;然后，在Redis中，提供了指令 CLUSTER KEYSLOT 来计算某一个key属于哪个Slot
+然后，在Redis中，提供了指令 CLUSTER KEYSLOT 来计算某一个key属于哪个Slot
 
 ```shell
 127.0.0.1:6381> CLUSTER KEYSLOT k1
 (integer) 12706
 ```
 
-&#x9;另外，Redis在计算hash槽时，会使用hashtag。如果key中有大括号{}，那么只会根据大括号中的hash tag来计算槽位。
+另外，Redis在计算hash槽时，会使用hashtag。如果key中有大括号{}，那么只会根据大括号中的hash tag来计算槽位。
 
 ```shell
 127.0.0.1:6381> CLUSTER KEYSLOT k1
@@ -813,23 +813,23 @@ redis-cli -a 123qweasd -p 6381 --cluster check 192.168.65.214:6381
 OK
 ```
 
-&#x9;在大型Redis集群中，经常会出现数据倾斜的问题。也就是大量的数据被集中存储到了集群中某一个热点Redis节点上。从而造成这一个节点的负载明显大于其他节点。这种数据倾斜问题就容易造成集群的资源浪费。
+在大型Redis集群中，经常会出现数据倾斜的问题。也就是大量的数据被集中存储到了集群中某一个热点Redis节点上。从而造成这一个节点的负载明显大于其他节点。这种数据倾斜问题就容易造成集群的资源浪费。
 
-&#x9;调整数据倾斜的问题，常见的思路就是分两步。第一步，调整key的结构，尤其是那些访问频繁的热点key，让数据能够尽量平均的分配到各个slot上。第二步，调整slot的分布，将那些数据量多，访问频繁的热点slot进行重新调配，让他们尽量平均的分配到不同的Redis节点上。
+调整数据倾斜的问题，常见的思路就是分两步。第一步，调整key的结构，尤其是那些访问频繁的热点key，让数据能够尽量平均的分配到各个slot上。第二步，调整slot的分布，将那些数据量多，访问频繁的热点slot进行重新调配，让他们尽量平均的分配到不同的Redis节点上。
 
 ## 4、Redis集群选举原理-了解
 
 **1、gossip协议**
 
-&#x9;Redis集群之间通过gossip协议进行频繁的通信，用于传递消息和更新节点状态。
+Redis集群之间通过gossip协议进行频繁的通信，用于传递消息和更新节点状态。
 
-&#x9;主要作用有：
+主要作用有：
 
 *   节点间发送心跳和确认其他节点的存在。
 *   &#x20;通知其他节点新节点的加入或已经下线的节点。&#x20;
 *   通过反馈机制更新节点的状态，如权重、过期时间等
 
-&#x9;gossip协议包含多种消息，包括ping，pong，meet，fail等等。&#x20;
+gossip协议包含多种消息，包括ping，pong，meet，fail等等。&#x20;
 
 *   meet：某个节点发送meet给新加入的节点，让新节点加入集群中，然后新节点就会开始与其他节点进行通信；&#x20;
 *   ping：每个节点都会频繁给其他节点发送ping，其中包含自己的状态还有自己维护的集群元数据，互相通过 ping交换元数据(类似自己感知到的集群节点增加和移除，hash slot信息等)；&#x20;
@@ -838,15 +838,15 @@ OK
 
 ![image.png](https://note.youdao.com/yws/res/1184/WEBRESOURCE61243a4a61bddb9f4244a445b94a394d)
 
-&#x9;gossip集群是去中心化的，各个节点彼此之间通过gossip协议互相通信，保证集群内部各个节点最终能够达成统一。gossip协议更新元数据并不是同时在集群内部同步，而是陆陆续续请求到所有节点上。因此gossip协议的数据统一是有一定的延迟的。
+gossip集群是去中心化的，各个节点彼此之间通过gossip协议互相通信，保证集群内部各个节点最终能够达成统一。gossip协议更新元数据并不是同时在集群内部同步，而是陆陆续续请求到所有节点上。因此gossip协议的数据统一是有一定的延迟的。
 
-&#x9;gossip协议最大的好处在于，即使集群节点的数量增加，每个节点的负载也不会增加很多，几乎是恒定的。因此在Redis集群中，哪怕构建非常多的节点，也不会对服务性能造成很大的影响。但是gossip协议的数据同步是有延迟的，如果集群节点太多，数据同步的延迟时间也会增加。这对于Redis是不合适的。因此，通常不建议构建太大的Redis集群。
+gossip协议最大的好处在于，即使集群节点的数量增加，每个节点的负载也不会增加很多，几乎是恒定的。因此在Redis集群中，哪怕构建非常多的节点，也不会对服务性能造成很大的影响。但是gossip协议的数据同步是有延迟的，如果集群节点太多，数据同步的延迟时间也会增加。这对于Redis是不合适的。因此，通常不建议构建太大的Redis集群。
 
-&#x9;需要注意下的是，Redis集群中，每个节点都有一个专门用于节点之间进行gossip通信的端口，就是自己提供服务的端口+10000.因此，在部署Redis集群时，要注意防火墙配置，不要把这个端口屏蔽了。
+需要注意下的是，Redis集群中，每个节点都有一个专门用于节点之间进行gossip通信的端口，就是自己提供服务的端口+10000.因此，在部署Redis集群时，要注意防火墙配置，不要把这个端口屏蔽了。
 
 **2、Redis集群选举流程**
 
-&#x9;当slave发现自己的master变为FAIL状态时，便尝试进行Failover，以期成为新的master。由于挂掉的master 可能会有多个slave，从而存在多个slave竞争成为master节点的过程， 其过程如下：&#x20;
+当slave发现自己的master变为FAIL状态时，便尝试进行Failover，以期成为新的master。由于挂掉的master 可能会有多个slave，从而存在多个slave竞争成为master节点的过程， 其过程如下：&#x20;
 
 1》slave发现自己的master变为FAIL&#x20;
 
@@ -868,11 +868,11 @@ SLAVE\_RANK表示此slave已经从master复制数据的总量的rank。Rank越�
 
 ## 5、Redis集群能不能保证数据安全？
 
-&#x9;**首先，在Redis集群相对比较稳定的时候，Redis集群是能够保证数据安全的。**
+**首先，在Redis集群相对比较稳定的时候，Redis集群是能够保证数据安全的。**
 
-&#x9;	因为Redis集群中每个master都是可以配置slave从节点的。这些slave节点会即时备份master的数据。在master宕机时，slave会自动切换成master。继续提供服务。
+	因为Redis集群中每个master都是可以配置slave从节点的。这些slave节点会即时备份master的数据。在master宕机时，slave会自动切换成master。继续提供服务。
 
-&#x9;	在Redis的配置文件中，有两个参数用来保证每个master必须有健康的slave进行备份。
+	在Redis的配置文件中，有两个参数用来保证每个master必须有健康的slave进行备份。
 
 ```conf
 # It is possible for a master to stop accepting writes if there are less than
@@ -898,17 +898,17 @@ SLAVE\_RANK表示此slave已经从master复制数据的总量的rank。Rank越�
 # min-replicas-max-lag is set to 10
 ```
 
-&#x9;**然后，由于Redis集群的gossip协议在同步元数据时不保证强一致性，这意味着在特定的条件下，Redis集群可能会丢掉一些被系统收到的写入请求命令。**
+**然后，由于Redis集群的gossip协议在同步元数据时不保证强一致性，这意味着在特定的条件下，Redis集群可能会丢掉一些被系统收到的写入请求命令。**
 
-&#x9;这些特定条件通常都比较苛刻，概率比较小。比如网络抖动产生的脑裂问题。
+这些特定条件通常都比较苛刻，概率比较小。比如网络抖动产生的脑裂问题。
 
-&#x9;在企业中，有良好运维支持，通常可以认为Redis集群的数据是安全的。
+在企业中，有良好运维支持，通常可以认为Redis集群的数据是安全的。
 
 # 六、Redis数据安全性方案总结
 
-&#x9;对于任何数据存储系统来说，数据安全都是重中之重。Redis也不例外。从数据安全性的角度来梳理Redis从单机到集群的各种部署架构，可以看到用Redis保存数据基本上还是非常靠谱的。甚至Redis的数据保存策略，在很多场景下，都是一种教科书级别的解决方案。另外，之前介绍过，Redis现在推出了企业版本。企业版在业务功能层面并没有做太多的加法，核心就是在服务高可用以及数据安全方面提供了更加全面的支持。有兴趣的朋友可以自行去了解补充。
+对于任何数据存储系统来说，数据安全都是重中之重。Redis也不例外。从数据安全性的角度来梳理Redis从单机到集群的各种部署架构，可以看到用Redis保存数据基本上还是非常靠谱的。甚至Redis的数据保存策略，在很多场景下，都是一种教科书级别的解决方案。另外，之前介绍过，Redis现在推出了企业版本。企业版在业务功能层面并没有做太多的加法，核心就是在服务高可用以及数据安全方面提供了更加全面的支持。有兴趣的朋友可以自行去了解补充。
 
-&#x9;但是，基于内存和硬盘的成本对比，Redis通常还是不建议作为独立的数据库使用。大部分情况下，还是发挥Redis高性能的优势，作为一个数据缓存来使用。其实，如果有非常靠谱的运维支撑，Redis作为数据库来使用完全是可以的。比如，Redis现在提供了基于云服务器的RedisCloud服务。其中就可以购买作为数据库使用的Redis实例。 &#x20;
+但是，基于内存和硬盘的成本对比，Redis通常还是不建议作为独立的数据库使用。大部分情况下，还是发挥Redis高性能的优势，作为一个数据缓存来使用。其实，如果有非常靠谱的运维支撑，Redis作为数据库来使用完全是可以的。比如，Redis现在提供了基于云服务器的RedisCloud服务。其中就可以购买作为数据库使用的Redis实例。 &#x20;
 
 > 有道云笔记链接：【有道云笔记】2、Redis数据安全性分析.md
 > <https://note.youdao.com/s/Bwu9bklN>
