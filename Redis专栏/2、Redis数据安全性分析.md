@@ -182,7 +182,7 @@ appendfilename "appendonly.aof"
 
 &#x9;Redis7中，对文件名称做了调整。原本只是一个文件，现在换成了三个文件。base.rdb文件即二进制的数据文件。incr.aof是增量的操作日志。manifest则是记录文件信息的元文件。其实在Redis7之前的版本中，aof文件也会包含二进制的RDB部分和文本的AOF部分。在Redis7中，将这两部分分成了单独的文件，这样，即可以分别用来恢复文件，也便于控制AOF文件的大小。
 
-![image.png](https://note.youdao.com/yws/res/1181/WEBRESOURCE359d11c7c05083da0ed6265cfee10699)
+![](assets/2、Redis数据安全性分析/file-20260531100134034.png)
 
 &#x9;从这几个文件中能够看到， 现在的AOF已经具备了RDB+AOF的功能。并且，拆分增量文件的方式，也能够进一步控制aof文件的大小。
 
@@ -215,7 +215,8 @@ OK
 
 &#x9;然后，就可以打开appendonly.aof.1.incr.aof增量文件。里面其实就是按照Redis的协议记录了每一次操作。
 
-![image.png](https://note.youdao.com/yws/res/1182/WEBRESOURCE190fae7430a1c17588cf320e0732a78b)
+![](assets/2、Redis数据安全性分析/file-20260531100152047.png)
+
 
 &#x9;这就是redis的指令协议。redis就是通过TCP协议，一次次解析各个指令。比如一个set k1 v1 这样的指令，\*3表示由三个部分组成， 第一个部分 \$3 set 表示三个字符长度的set组成第一个部分。
 
