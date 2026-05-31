@@ -463,11 +463,11 @@ replica-read-only yes
 
 在从节点的日志当中其实能够分析出结果：
 
-![image.png](https://note.youdao.com/yws/res/1183/WEBRESOURCE8644dcffc88c46da5181bae7fe932e00)
+![](assets/2、Redis数据安全性分析/file-20260531122709178.png)
+
 
 也可以在从节点尝试解除主从关系，再重新建立主从关系测试一下。
-
-![image.png](https://note.youdao.com/yws/res/1185/WEBRESOURCE7020b48d233250dafce42ac849960e8b)
+![](assets/2、Redis数据安全性分析/file-20260531122721141.png)
 
 ## 5、主从复制工作流程
 
@@ -496,8 +496,8 @@ replica-read-only yes
 ## 1、Sentinel是什么？有什么用
 
 官网介绍： <https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/>
+![](assets/2、Redis数据安全性分析/file-20260531122741715.png)
 
-![image.png](https://note.youdao.com/yws/res/1177/WEBRESOURCE39bd8de7abf79b28604636f9b32c10e4)
 
 Redis的Sentinel不负责数据读写，主要就是给Redis的Replica主从复制提供高可用功能。主要作用有四个：
 
