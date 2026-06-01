@@ -168,7 +168,7 @@ appendfilename "appendonly.aof"
 
 Redis7中，对文件名称做了调整。原本只是一个文件，现在换成了三个文件。base.rdb文件即二进制的数据文件。incr.aof是增量的操作日志。manifest则是记录文件信息的元文件。其实在Redis7之前的版本中，aof文件也会包含二进制的RDB部分和文本的AOF部分。在Redis7中，将这两部分分成了单独的文件，这样，即可以分别用来恢复文件，也便于控制AOF文件的大小。
 
-![](assets/2、Redis数据安全性分析/file-20260531100134034.png)
+![](assets/3、Redis数据安全性分析/file-20260531100134034.png)
 
 从这几个文件中能够看到， 现在的AOF已经具备了RDB+AOF的功能。并且，拆分增量文件的方式，也能够进一步控制aof文件的大小。
 
@@ -201,7 +201,7 @@ OK
 
 然后，就可以打开appendonly.aof.1.incr.aof增量文件。里面其实就是按照Redis的协议记录了每一次操作。
 
-![](assets/2、Redis数据安全性分析/file-20260531100152047.png)
+![](assets/3、Redis数据安全性分析/file-20260531100152047.png)
 
 
 这就是redis的指令协议。redis就是通过TCP协议，一次次解析各个指令。比如一个set k1 v1 这样的指令，\*3表示由三个部分组成， 第一个部分 \$3 set 表示三个字符长度的set组成第一个部分。
@@ -463,11 +463,11 @@ replica-read-only yes
 
 在从节点的日志当中其实能够分析出结果：
 
-![](assets/2、Redis数据安全性分析/file-20260531122709178.png)
+![](assets/3、Redis数据安全性分析/file-20260531122709178.png)
 
 
 也可以在从节点尝试解除主从关系，再重新建立主从关系测试一下。
-![](assets/2、Redis数据安全性分析/file-20260531122721141.png)
+![](assets/3、Redis数据安全性分析/file-20260531122721141.png)
 
 ## 5、主从复制工作流程
 
@@ -496,7 +496,7 @@ replica-read-only yes
 ## 1、Sentinel是什么？有什么用
 
 官网介绍： <https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/>
-![](assets/2、Redis数据安全性分析/file-20260531122741715.png)
+![](assets/3、Redis数据安全性分析/file-20260531122741715.png)
 
 
 Redis的Sentinel不负责数据读写，主要就是给Redis的Replica主从复制提供高可用功能。主要作用有四个：
@@ -512,7 +512,7 @@ Sentinel的环境搭建以及基础使用，在基础版中已经有详细过程
 
 Sentinel最核心的配置其实就是  sentinel.conf中的sentinel monitor \<master-name> \<ip> \<redis-port> \<quorum>
 
-![](assets/2、Redis数据安全性分析/file-20260601103110086.png)
+![](assets/3、Redis数据安全性分析/file-20260601103110086.png)
 
 这个配置中，最抽象的参数就最后的那个quorum。这个参数是什么意思呢？这就需要了解一下Sentinel的工作原理。
 
@@ -534,7 +534,7 @@ Sentinel的核心工作原理分两个步骤，一是如何发现master服务宕
 
 当确定master宕机后，Sentinel会主动将一个新的slave切换为mater。这个过程是怎么做的呢？通过以下一个Sentinel服务的日志，可以看到整个过程：
 
-![](assets/2、Redis数据安全性分析/file-20260601103209165.png)
+![](assets/3、Redis数据安全性分析/file-20260601103209165.png)
 
 从这个日志中，可以看到Sentinel在做故障切换时，是经过了以下几个步骤的：
 
@@ -574,7 +574,7 @@ Sentinel+Replica的集群服务，可以实现自动故障恢复，所以可用�
 
 一句话总结：将多组Redis Replica主从集群整合到一起，像一个Redis服务一样对外提供服务。
 
-![](assets/2、Redis数据安全性分析/file-20260601103253564.png)
+![](assets/3、Redis数据安全性分析/file-20260601103253564.png)
 
 所以Redis Cluster的核心依然是Replica复制集。
 
@@ -734,7 +734,7 @@ fd3cbd892f11e950104955f7297adb20fab0253c 192.168.65.214:6381@16381 myself,master
 
 Redis集群设置16384个哈希槽。每个key会通过CRC16校验后，对16384取模，来决定放到哪个槽。集群的每个节点负责一部分的hash槽。
 
-![](assets/2、Redis数据安全性分析/file-20260601103321397.png)
+![](assets/3、Redis数据安全性分析/file-20260601103321397.png)
 
 **问题1、Slot如何分配**
 
@@ -836,7 +836,7 @@ gossip协议包含多种消息，包括ping，pong，meet，fail等等。&#x20;
 *   pong: 对ping和meet消息的返回，包含自己的状态和其他信息，也可以用于信息广播和更新；&#x20;
 *   fail: 某个节点判断另一个节点fail之后，就发送fail给其他节点，通知其他节点，指定的节点宕机了。&#x20;
 
-![](assets/2、Redis数据安全性分析/file-20260601103354864.png)
+![](assets/3、Redis数据安全性分析/file-20260601103354864.png)
 
 gossip集群是去中心化的，各个节点彼此之间通过gossip协议互相通信，保证集群内部各个节点最终能够达成统一。gossip协议更新元数据并不是同时在集群内部同步，而是陆陆续续请求到所有节点上。因此gossip协议的数据统一是有一定的延迟的。
 
