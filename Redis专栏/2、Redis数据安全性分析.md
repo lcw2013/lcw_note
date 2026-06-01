@@ -512,7 +512,7 @@ Sentinel的环境搭建以及基础使用，在基础版中已经有详细过程
 
 Sentinel最核心的配置其实就是  sentinel.conf中的sentinel monitor \<master-name> \<ip> \<redis-port> \<quorum>
 
-![image.png](https://note.youdao.com/yws/res/1176/WEBRESOURCE9c45ee01ee818008e28dcc6ddaa1469d)
+![](assets/2、Redis数据安全性分析/file-20260601103110086.png)
 
 这个配置中，最抽象的参数就最后的那个quorum。这个参数是什么意思呢？这就需要了解一下Sentinel的工作原理。
 
@@ -534,7 +534,7 @@ Sentinel的核心工作原理分两个步骤，一是如何发现master服务宕
 
 当确定master宕机后，Sentinel会主动将一个新的slave切换为mater。这个过程是怎么做的呢？通过以下一个Sentinel服务的日志，可以看到整个过程：
 
-![image.png](https://note.youdao.com/yws/res/1179/WEBRESOURCEb9b5ad934ab828827d9519d495d2a09c)
+![](assets/2、Redis数据安全性分析/file-20260601103209165.png)
 
 从这个日志中，可以看到Sentinel在做故障切换时，是经过了以下几个步骤的：
 
@@ -574,7 +574,7 @@ Sentinel+Replica的集群服务，可以实现自动故障恢复，所以可用�
 
 一句话总结：将多组Redis Replica主从集群整合到一起，像一个Redis服务一样对外提供服务。
 
-![image.png](https://note.youdao.com/yws/res/1180/WEBRESOURCE7c02d204eef02d9b3a20c46a2e0cf5d3)
+![](assets/2、Redis数据安全性分析/file-20260601103253564.png)
 
 所以Redis Cluster的核心依然是Replica复制集。
 
@@ -734,7 +734,7 @@ fd3cbd892f11e950104955f7297adb20fab0253c 192.168.65.214:6381@16381 myself,master
 
 Redis集群设置16384个哈希槽。每个key会通过CRC16校验后，对16384取模，来决定放到哪个槽。集群的每个节点负责一部分的hash槽。
 
-![image.png](https://note.youdao.com/yws/res/1178/WEBRESOURCEd0890ca70a34a7c99c6e7e22bef307cf)
+![](assets/2、Redis数据安全性分析/file-20260601103321397.png)
 
 **问题1、Slot如何分配**
 
@@ -836,7 +836,7 @@ gossip协议包含多种消息，包括ping，pong，meet，fail等等。&#x20;
 *   pong: 对ping和meet消息的返回，包含自己的状态和其他信息，也可以用于信息广播和更新；&#x20;
 *   fail: 某个节点判断另一个节点fail之后，就发送fail给其他节点，通知其他节点，指定的节点宕机了。&#x20;
 
-![image.png](https://note.youdao.com/yws/res/1184/WEBRESOURCE61243a4a61bddb9f4244a445b94a394d)
+![](assets/2、Redis数据安全性分析/file-20260601103354864.png)
 
 gossip集群是去中心化的，各个节点彼此之间通过gossip协议互相通信，保证集群内部各个节点最终能够达成统一。gossip协议更新元数据并不是同时在集群内部同步，而是陆陆续续请求到所有节点上。因此gossip协议的数据统一是有一定的延迟的。
 
