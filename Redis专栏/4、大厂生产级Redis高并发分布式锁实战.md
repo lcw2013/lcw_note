@@ -75,6 +75,7 @@ Redisson源码
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091742423.png)
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091752630.png)
 加锁核心逻辑为
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603103625560.png)
 ```java
 <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
     this.internalLockLeaseTime = unit.toMillis(leaseTime);
