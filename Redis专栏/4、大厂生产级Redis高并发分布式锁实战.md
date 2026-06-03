@@ -112,6 +112,42 @@ end;
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603104913996.png)
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603104947213.png)
 
+lua脚本
+```java
+// lua脚本
+if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) // 如果当前线程还持有锁，则重新设置过期时间为30s
+    then redis.call('pexpire', KEYS[1], ARGV[1]); // 设置过期时间为30s
+    return 1; // 返回true，表示成功延长锁过期时间
+end; 
+    return 0; // 返回false，表示当前线程未拥有锁/锁已经释放，无法延长
+	
+	
+protected RFuture<Boolean> unlockInnerAsync(long threadId) {
+    return this.commandExecutor.evalWriteAsync(this.getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN, 
+    "lua脚本", 
+    Arrays.asList(this.getName(), this.getChannelName()), new Object[]{LockPubSub.unlockMessage, this.internalLockLeaseTime, this.getLockName(threadId)});
+}
+// lua脚本
+if (redis.call('exists', KEYS[1]) == 0) // 锁已经不存在了，则发布unlockMessage，通知其他正在订阅channel频道的线程
+    then redis.call('publish', KEYS[2], ARGV[1]); 
+    return 1; // 返回true
+end;
+if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) // 当前线程未持有这把锁，返回NULL
+    then return nil;
+end; 
+local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); // 可重入锁，数量减1
+if (counter > 0) // 如果还持有锁，则继续延长过期时间，返回false
+    then redis.call('pexpire', KEYS[1], ARGV[2]); 
+    return 0;
+else // 所有的线程任务都执行完毕，直接删除KEY，发布unlockMessage，通知其他正在订阅channel频道的线程
+    redis.call('del', KEYS[1]); 
+    redis.call('publish', KEYS[2], ARGV[1]); 
+    return 1; // 返回true
+end; 
+    return nil; // 其他情况，返回NULL
+
+```
+
 核心代码
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603101311082.png)
 getEntry(threadId).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
