@@ -108,9 +108,14 @@ end;
     return 0; // 返回false，表示当前线程未拥有锁/锁已经释放，无法延长
 
 ```
-其他线程加锁逻辑
-![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603101013737.png)
+### 其他线程加锁逻辑
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603104913996.png)
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603104947213.png)
+
 核心代码
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603101311082.png)
 getEntry(threadId).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
 获取信号许可阻塞，此阻塞会让出cpu，唤醒是用的Redis的发布订阅
+
+解锁逻辑
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603104836237.png)
