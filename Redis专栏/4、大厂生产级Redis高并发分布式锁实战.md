@@ -99,7 +99,15 @@ end;
 锁续命逻辑
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603095510372.png)
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603095542516.png)
+```java
+// lua脚本
+if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) // 如果当前线程还持有锁，则重新设置过期时间为30s
+    then redis.call('pexpire', KEYS[1], ARGV[1]); // 设置过期时间为30s
+    return 1; // 返回true，表示成功延长锁过期时间
+end; 
+    return 0; // 返回false，表示当前线程未拥有锁/锁已经释放，无法延长
 
+```
 其他线程加锁逻辑
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603101013737.png)
 核心代码
