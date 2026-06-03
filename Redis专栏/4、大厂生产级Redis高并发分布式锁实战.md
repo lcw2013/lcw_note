@@ -76,23 +76,23 @@ Redisson源码
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091752630.png)
 加锁核心逻辑为
 ```java
-<T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {  
-    internalLockLeaseTime = unit.toMillis(leaseTime);  
-  
-    return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, command,  
-              "if (redis.call('exists', KEYS[1]) == 0) then " +  
-                  "redis.call('hset', KEYS[1], ARGV[2], 1); " +  
-                  "redis.call('pexpire', KEYS[1], ARGV[1]); " +  
-                  "return nil; " +  
-              "end; " +  
-              "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +  
-                  "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +  
-                  "redis.call('pexpire', KEYS[1], ARGV[1]); " +  
-                  "return nil; " +  
-              "end; " +  
-              "return redis.call('pttl', KEYS[1]);",  
-                Collections.<Object>singletonList(getName()), internalLockLeaseTime, getLockName(threadId));  
+<T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
+    this.internalLockLeaseTime = unit.toMillis(leaseTime);
+    return this.commandExecutor.evalWriteAsync(this.getName(), LongCodec.INSTANCE, command, "/lua脚本/", 
+    Collections.singletonList(this.getName()), new Object[]{this.internalLockLeaseTime, this.getLockName(threadId)});
 }
+// lua脚本
+if (redis.call('exists', KEYS[1]) == 0) // KEYS[1] 表示 this.getName()，即lockKey，如果redis中没有这个key，则可以加锁
+    then redis.call('hset', KEYS[1], ARGV[2], 1); // 使用Hash表存field：this.getLockName(threadId)，value：1，lockKey指向这个Hash
+    redis.call('pexpire', KEYS[1], ARGV[1]); // 设置过期时间30s
+    return nil; // 加锁成功，返回NULL（Java）
+end; 
+if (redis.call('hexists', KEYS[1], ARGV[2]) == 1)  // 在线程A中调用的线程B也请求相同的锁，即可重入锁
+    then redis.call('hincrby', KEYS[1], ARGV[2], 1); // 为了防止死锁，基于线程A的值加1，即B也获得了这把锁，继续执行
+    redis.call('pexpire', KEYS[1], ARGV[1]); // 继续延长锁的时间为30s
+    return nil; // 加锁成功，返回NULL（Java）
+end; 
+   return redis.call('pttl', KEYS[1]); // 其他线程请求锁，只返回当前持有锁的剩余过期时间
 ```
 
 锁续命逻辑
