@@ -78,3 +78,74 @@ String get(String key) {
   <version>3.6.5</version> 
 </dependency>
 ```
+
+示例伪代码：
+```java
+package com.redisson;
+
+import org.redisson.Redisson;
+import org.redisson.api.RBloomFilter;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
+
+public class RedissonBloomFilter {
+
+    public static void main(String[] args) {
+        Config config = new Config();
+        config.useSingleServer().setAddress("redis://localhost:6379");
+        //构造Redisson
+        RedissonClient redisson = Redisson.create(config);
+
+        RBloomFilter<String> bloomFilter = redisson.getBloomFilter("nameList");
+        //初始化布隆过滤器：预计元素为100000000L,误差率为3%,根据这两个参数会计算出底层的bit数组大小
+        bloomFilter.tryInit(100000000L,0.03);
+        //将zhuge插入到布隆过滤器中
+        bloomFilter.add("zhuge");
+
+        //判断下面号码是否在布隆过滤器中
+        System.out.println(bloomFilter.contains("guojia"));//false
+        System.out.println(bloomFilter.contains("baiqi"));//false
+        System.out.println(bloomFilter.contains("zhuge"));//true
+    }
+}
+```
+
+使用布隆过滤器需要把所有数据提前放入布隆过滤器，并且在增加数据时也要往布隆过滤器里放，布隆过滤器缓存过滤伪代码：
+```java
+//初始化布隆过滤器
+RBloomFilter<String> bloomFilter = redisson.getBloomFilter("nameList");
+//初始化布隆过滤器：预计元素为100000000L,误差率为3%
+bloomFilter.tryInit(100000000L,0.03);
+        
+//把所有数据存入布隆过滤器
+void init(){
+    for (String key: keys) {
+        bloomFilter.put(key);
+    }
+}
+
+String get(String key) {
+    // 从布隆过滤器这一级缓存判断下key是否存在
+    Boolean exist = bloomFilter.contains(key);
+    if(!exist){
+        return "";
+    }
+    // 从缓存中获取数据
+    String cacheValue = cache.get(key);
+    // 缓存为空
+    if (StringUtils.isBlank(cacheValue)) {
+        // 从存储中获取
+        String storageValue = storage.get(key);
+        cache.set(key, storageValue);
+        // 如果存储数据为空， 需要设置一个过期时间(300秒)
+        if (storageValue == null) {
+            cache.expire(key, 60 * 5);
+        }
+        return storageValue;
+    } else {
+        // 缓存非空
+        return cacheValue;
+    }
+}
+```
+注意：布隆过滤器不能删除数据，如果要删除得重新初始化数据。
