@@ -29,4 +29,41 @@
 
 
 **综上，为了解决分布式锁问题，应用Redisson**
+```java
+@RequestMapping("/deduct_stock")
+public String deductStock() {
+	String lockKey = "lock:product_101";
+	//Boolean result = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, "zhuge");
+	//stringRedisTemplate.expire(lockKey, 10, TimeUnit.SECONDS);
+	/*String clientId = UUID.randomUUID().toString();
+	Boolean result = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, clientId, 30, TimeUnit.SECONDS); //jedis.setnx(k,v)
+	if (!result) {
+		return "error_code";
+	}*/
+	//获取锁对象
+	RLock redissonLock = redisson.getLock(lockKey);
+	//加分布式锁
+	redissonLock.lock();  //  .setIfAbsent(lockKey, clientId, 30, TimeUnit.SECONDS);
+	try {
+		int stock = Integer.parseInt(stringRedisTemplate.opsForValue().get("stock")); // jedis.get("stock")
+		if (stock > 0) {
+			int realStock = stock - 1;
+			stringRedisTemplate.opsForValue().set("stock", realStock + ""); // jedis.set(key,value)
+			System.out.println("扣减成功，剩余库存:" + realStock);
+		} else {
+			System.out.println("扣减失败，库存不足");
+		}
+	} finally {
+		/*if (clientId.equals(stringRedisTemplate.opsForValue().get(lockKey))) {
+			stringRedisTemplate.delete(lockKey);
+		}*/
+		//解锁
+		redissonLock.unlock();
+	}
+
+
+	return "end";
+}
+
+```
 
