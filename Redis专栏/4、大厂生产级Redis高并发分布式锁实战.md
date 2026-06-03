@@ -28,7 +28,7 @@
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260601195918370.png)
 
 
-**综上，为了解决分布式锁问题，应用Redisson**
+## **综上，为了解决分布式锁问题，应用Redisson**
 ```java
 @RequestMapping("/deduct_stock")
 public String deductStock() {
@@ -66,7 +66,13 @@ public String deductStock() {
 }
 
 ```
-Redisson源码
+redisson架构图
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603105304403.png)
+
+
+## Redisson源码
+## 加锁逻辑
+
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091430642.png)
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091551192.png)
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091609989.png)
