@@ -66,4 +66,5 @@ public String deductStock() {
 }
 
 ```
-
+Redisson源码
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091430642.png)
