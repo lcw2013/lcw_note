@@ -1,8 +1,8 @@
 
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260601161415495.png)
 压测软件Jmeter
-# 减库存代码示例
-## 写法1：存在的问题
+# 一、减库存代码示例
+## 写法一：存在的问题
 **synchronized只能保证单机环境下多线程并发安全，分布式环境下无法保证**
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260601170640343.png)
 
@@ -28,7 +28,8 @@
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260601195918370.png)
 
 
-## **综上，为了解决分布式锁问题，应用Redisson**
+# 二、综上，为了解决分布式锁问题，应用Redisson
+
 ```java
 @RequestMapping("/deduct_stock")
 public String deductStock() {
@@ -71,7 +72,7 @@ redisson架构图
 
 
 ## Redisson源码
-## 加锁逻辑
+### 加锁逻辑
 
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091430642.png)
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091551192.png)
@@ -80,7 +81,7 @@ redisson架构图
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091729269.png)
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091742423.png)
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091752630.png)
-加锁核心逻辑为
+### 加锁核心逻辑为
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603103625560.png)
 ```java
 <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
@@ -102,7 +103,7 @@ end;
    return redis.call('pttl', KEYS[1]); // 其他线程请求锁，只返回当前持有锁的剩余过期时间
 ```
 
-锁续命逻辑
+### 锁续命逻辑
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603095510372.png)
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603095542516.png)
 ```java
@@ -119,7 +120,7 @@ end;
 getEntry(threadId).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
 获取信号许可阻塞，此阻塞会让出cpu，唤醒是用的Redis的发布订阅
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603104947213.png)
-解锁逻辑
+### 解锁逻辑
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603104836237.png)
 
 lua脚本
@@ -158,5 +159,5 @@ end;
 
 ```
 
-拓展tryLock
+### 拓展tryLock
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603105635075.png)
