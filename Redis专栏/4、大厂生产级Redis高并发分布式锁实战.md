@@ -74,3 +74,27 @@ Redisson源码
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091729269.png)
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091742423.png)
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091752630.png)
+加锁核心逻辑为
+```java
+<T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {  
+    internalLockLeaseTime = unit.toMillis(leaseTime);  
+  
+    return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, command,  
+              "if (redis.call('exists', KEYS[1]) == 0) then " +  
+                  "redis.call('hset', KEYS[1], ARGV[2], 1); " +  
+                  "redis.call('pexpire', KEYS[1], ARGV[1]); " +  
+                  "return nil; " +  
+              "end; " +  
+              "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +  
+                  "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +  
+                  "redis.call('pexpire', KEYS[1], ARGV[1]); " +  
+                  "return nil; " +  
+              "end; " +  
+              "return redis.call('pttl', KEYS[1]);",  
+                Collections.<Object>singletonList(getName()), internalLockLeaseTime, getLockName(threadId));  
+}
+```
+
+锁续命逻辑
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603095510372.png)
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603095542516.png)
