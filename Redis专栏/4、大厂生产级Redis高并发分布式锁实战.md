@@ -101,3 +101,7 @@ end;
 
 其他线程加锁逻辑
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603101013737.png)
+核心代码
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603101311082.png)
+getEntry(threadId).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
+获取信号许可阻塞，此阻塞会让出cpu
