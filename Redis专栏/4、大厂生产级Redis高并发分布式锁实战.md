@@ -173,6 +173,5 @@ RedLock存在的问题，
 
 # 四、锁优化
 1、加锁的粒度越小越好
-2、分段锁，比如商品的库存product_101_stock有一千个库存，拆解为10个key
-
-product_101_stock放一百个库存，product_102_stock也放一百个库存，依次类推
+2、分段锁，比如商品的库存product_101_stock有一千个库存，拆解为10个key，轮询
+product_101_stock放一百个库存，product_102_stock也放一百个库存，依次类推；参考1.7CurrentHashMap的底层实现
