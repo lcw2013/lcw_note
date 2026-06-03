@@ -68,3 +68,9 @@ public String deductStock() {
 ```
 Redisson源码
 ![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091430642.png)
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091551192.png)
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091609989.png)
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091651447.png)
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091729269.png)
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091742423.png)
+![](assets/4、大厂生产级Redis高并发分布式锁实战/file-20260603091752630.png)
