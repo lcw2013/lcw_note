@@ -593,8 +593,8 @@ public class SalaryJARLoader6 extends SecureClassLoader {
 ​	双亲委派机制是非常基础的一个底层体系，很多重要框架都需要进行定制。
 
 ​	例如Tomcat的类加载体系如下：
+![](assets/2、JAVA类加载机制/file-20260606154515369.png)
 
-![image.png](https://note.youdao.com/yws/res/1597/WEBRESOURCEa47f33e6f778eea45957f703a354c40a)
 
 tomcat的几个主要类加载器：
 
@@ -635,8 +635,8 @@ public class SPITest {
 > 如果你觉得接下来的部分有点跟不上，那就不要强行去烧脑了。
 
 ​	老王分析了热加载器失效的原因，其实就是因为在OA应用的多个类加载器中，同时存在了SalaryCaler类的多个版本。
+![](assets/2、JAVA类加载机制/file-20260606154556865.png)
 
-![image.png](https://note.youdao.com/yws/res/1596/WEBRESOURCE5715d98fe0da9e1b1daaa795b2d036a3)\
 ​	AppClassLoader中的SalaryCaler对象，可以直接new出来，但是SalaryJARLoader中的那个SalaryCaler对象，在之前的例子当中，都只能通过很别扭的反射来使用。同样都是SalaryCaler，就不能让他也像一个正常的类那样使用吗？
 
 ​	于是，老王想到了一个简单粗暴的方式，明明都是SalaryCaler对象，那是不是可以直接做类型转换呢？像这样
