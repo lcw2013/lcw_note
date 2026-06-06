@@ -49,7 +49,7 @@ public class LoaderDemo {
 
 ​	可以看到JDK8中的两个类加载体系：
 
-
+![](assets/2、JAVA类加载机制/file-20260606154208398.png)
 
 ​	左侧是JDK中实现的类加载器，通过parent属性形成父子关系。应用中自定义的类加载器的parent都是AppClassLoader
 
@@ -102,8 +102,7 @@ protected Class<?> loadClass(String name, boolean resolve)
 ​	这个方法就是最为核心的双亲委派机制。并且这个方法是protected声明的，这意味着，这个方法是可以被子类覆盖的。所以，双亲委派机制也是可以被打破的。
 
 ​	当一个类加载器要加载一个类时，整体的过程就是通过双亲委派机制向上委托查找，如果没有查找到，就向下委托加载。整个过程整理如下图：
-
-![image.png](https://note.youdao.com/yws/res/1598/WEBRESOURCE7a269afb48957bd8421a321b07807312)
+![](assets/2、JAVA类加载机制/file-20260606154239232.png)
 
 ## 2、沙箱保护机制
 
@@ -134,8 +133,8 @@ private ProtectionDomain preDefineClass(String name,
 ## 2、Linking链接过程
 
 ​	在ClassLoader的loadClass方法中，还有一个不起眼的步骤，resolveClass。这是一个native方法。而其实现的过程称为linking-链接。链接过程的实现功能如下图：
+![](assets/2、JAVA类加载机制/file-20260606154308925.png)
 
-![image.png](https://note.youdao.com/yws/res/1600/WEBRESOURCE67bd71fdd87d0d98728b77d4c5129233)
 
 ​	其中关于半初始化状态就是JDK在处理一个类的static静态属性时，会先给这个属性分配一个默认值，作用是占住内存。然后等连接过程完成后，在后面的初始化阶段，再将静态属性从默认值修改为指定的初始值。
 
@@ -511,8 +510,7 @@ public class OADemo5 {
 ​	为什么会出现这种情况呢？这就是因为JDK的双亲委派机制。
 
 ​	自定的SalaryJARLoader的parent属性指向的是JDK内的AppClassLoader。而AppClassLoader会加载OA系统当中的所有代码，当然就包括小王提交的SalaryCaler类。这时，SalaryJARLoader去加载SalaryCaler类时，通过双亲委派，自然加载出来的就是APPClassloader中的SalayrCaler了。
-
-![image.png](https://note.youdao.com/yws/res/1596/WEBRESOURCE5715d98fe0da9e1b1daaa795b2d036a3)
+![](assets/2、JAVA类加载机制/file-20260606154352508.png)
 
 ​	所以，要保持热加载机制不失效，那就只能对这个双亲委派机制下手了。
 
