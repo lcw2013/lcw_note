@@ -5,5 +5,10 @@
   "obsidian-style-settings",
   "notebook-navigator",
   "fast-text-color",
-  "floating-toc"
+  "floating-toc",
+  "calendar",
+  "obsidian-clipper",
+  "editing-toolbar",
+  "obsidian-excalidraw-plugin",
+  "agent-client"
 ]
