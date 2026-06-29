@@ -1,7 +1,9 @@
 {
   "theme": "moonstone",
-  "cssTheme": "Blue Topaz",
+  "cssTheme": "",
   "enabledCssSnippets": [
     "custom-width"
-  ]
+  ],
+  "baseFontSize": 16,
+  "baseFontSizeAction": true
 }
