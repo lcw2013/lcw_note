@@ -40,8 +40,9 @@ MQ的作用主要有以下三个方面：
     例子：长江每年都会涨水，但是下游出水口的速度是基本稳定的，所以会涨水。引入三峡大坝后，可以把水储存起来，下游慢慢排水。
 
     作用：以稳定的系统资源应对突发的流量冲击。
+![](assets/一、RocketMQ快速实战以及核心概念详解/file-20260708090703731.png)
 
-    ![](img/1-3.png)![QQ\_1725009432095.png](https://note.youdao.com/yws/res/1509/WEBRESOURCEf867d95c1c06145b0e95471b49a96d34)
+
 
 # 二、RocketMQ产品特点
 
@@ -70,7 +71,8 @@ MQ的作用主要有以下三个方面：
 
 ​	RocketMQ的官网地址： <http://rocketmq.apache.org> 。在下载页面可以获取RocketMQ的源码包以及运行包。下载页面地址：<https://rocketmq.apache.org/download。>
 
-![](img/1-4.png)![QQ\_1725009460670.png](https://note.youdao.com/yws/res/1501/WEBRESOURCE3fd98681d1f12a304da9b6d047368107)
+![](assets/一、RocketMQ快速实战以及核心概念详解/file-20260708090750561.png)
+
 
 关于RocketMQ的版本： 我们这里采用最新的5.3.0版本。
 
@@ -79,20 +81,24 @@ MQ的作用主要有以下三个方面：
 > 据传，RocketMQ从4.x版本升级到5.x版本，重构的代码量超过了60%，变化是非常大的。另外，你可能要注意一下，4.x的系列版本已经于2024年3月停止了维护。这意味着目前已经不建议使用4.x的版本了。
 
 ​	运行只需要下载Binary运行版本就可以了。 当然，源码包也建议下载下来，后续会进行解读。运行包下载下来后，就可以直接解压，上传到服务器上。我们这里会上传到/app/rocketmq目录。解压后几个重要的目录如下:
+![](assets/一、RocketMQ快速实战以及核心概念详解/file-20260708090805324.png)
 
-![](img/1-5.png)![QQ\_1725009471551.png](https://note.youdao.com/yws/res/1517/WEBRESOURCEd79b805ec41a0e752882aef394d6abc4)
 
 ​	默认情况下，RocketMQ建议的运行环境需要至少12G的内存，这是生产环境比较理想的资源配置。但是，学习阶段，如果你的服务器没有这么大的内存空间，那么就需要做一下调整。进入bin目录，对其中的runserver.sh和runbroker.sh两个脚本进行一下修改。
 
 ​	使用vi runserver.sh指令，编辑这个脚本，找到下面的一行配置，调整Java进程的内存大小。
 
-    JAVA_OPT="${JAVA_OPT} -server -Xms1g -Xmx1g -Xmn512m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=320m"
+```java
+JAVA_OPT="${JAVA_OPT} -server -Xms1g -Xmx1g -Xmn512m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=320m"
+```
+
 
 ​	接下来，同样调整runbroker.sh中的内存大小。
-
-    JAVA_OPT="${JAVA_OPT} -server -Xms8g -Xmx8g"
-    修改为：
-    JAVA_OPT="${JAVA_OPT} -server -Xms2g -Xmx2g"
+```java
+JAVA_OPT="${JAVA_OPT} -server -Xms8g -Xmx8g"
+修改为：
+JAVA_OPT="${JAVA_OPT} -server -Xms2g -Xmx2g"
+```
 
 > 修改配置时，注意要根据你的JDK版本调整对应的配置行。RocketMQ是一个典型的Java应用，所以需要提前安装JDK。我们这里采用的是1.8版本。JDK的安装过程略。
 >
@@ -108,10 +114,15 @@ nohup bin/mqnamesrv &
 ```
 
 ​	指令执行后，会生成一个nohup.out的日志文件。在这个日志文件里如果看到下面这一条关键日志，就表示nameserver服务启动成功了。
+```java
+```
+Java HotSpot(TM) 64-Bit Server VM warning: Using the DefNew young collector with the CMS collector is deprecated and will likely be removed in a future release
+Java HotSpot(TM) 64-Bit Server VM warning: UseCMSCompactAtFullCollection is deprecated and will likely be removed in a future release.
+The Name Server boot success. serializeType=JSON, address 0.0.0.0:9876
+```
 
-    Java HotSpot(TM) 64-Bit Server VM warning: Using the DefNew young collector with the CMS collector is deprecated and will likely be removed in a future release
-    Java HotSpot(TM) 64-Bit Server VM warning: UseCMSCompactAtFullCollection is deprecated and will likely be removed in a future release.
-    The Name Server boot success. serializeType=JSON, address 0.0.0.0:9876
+```
+
 
 ​	接下来，可以通过jsp指令进行验证。使用jps指令后，可以看到有一个NamesrvStartup的进程运行，也表示nameserver服务启动完成。
 
